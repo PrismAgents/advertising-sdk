@@ -2,7 +2,7 @@
 
 Before you can use the `PrismClient`, ensure that the publisher address and publisher website URL are whitelisted by the Prism Protocol team. This is essential to utilize the SDK for publishing ads and generating revenue.
 
-Prism Accounting contract on bartio network: 0x82ff01DA9a64dFd05156277b5f0eF1d4Cc6d767B
+Prism Accounting contract on bartio network: 0x7a7183F68ab5ea7Fc51bfA7c6D1AE4DD789d0e7D
 
 To import and initialize the `PrismClient`, follow these steps:
 
