@@ -1,0 +1,44 @@
+# Ignore environment variables
+/.env
+/example/.env
+/example/node_modules
+
+
+# Node modules
+/node_modules
+
+# Build output
+/example/.next
+/example/.env
+
+# Package lock files
+/example/package-lock.json
+
+# Package files
+/example/package.json
+
+# TypeScript configuration files
+/example/tsconfig.json
+/example/tsconfig.node.json
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Coverage directory
+coverage/
+
+# Build directories
+dist/
+build/
+
+# Ignore local development files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+/example/node_modules
