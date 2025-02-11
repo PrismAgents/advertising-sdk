@@ -3,7 +3,40 @@
 Before you can use the `PrismClient`, ensure that the publisher address and publisher website URL are whitelisted by the Prism Protocol team. This is essential to utilize the SDK for publishing ads and generating revenue.
 
 Prism Accounting contract on bartio network: 0x7a7183F68ab5ea7Fc51bfA7c6D1AE4DD789d0e7D
+# Two options to integrate with Prism Protocol
+- By using the PrismClient SDK
+- By using the Prism Publisher API
 
+## Prism Publisher API
+
+#### Trigger auction:
+- Requisits: Publisher wallet address must be whitelisted by the Prism Protocol team.
+- POST call to Trigger auction: debits the campaign budget, credits the publisher wallet with 2% of the auction winning bid.
+- Returns: advertising image and landing page url
+
+   ```typescript
+      https://prismprotocol.xyz/api/auction/<userWallet>/<publisherWallet>
+   ```
+#### Manage publisher stats:
+- Requisits: Publisher website url must be given to the Prism team.
+- POST calls for number for clicks, impressions, and revenue on prism publisher website
+- Returns: success or error
+   ```typescript
+      https://prismprotocol.xyz/api/publisher/impressions/<publisherWallet>/<websiteUrl>/<auctionWinnerId>
+   ```
+   ```typescript
+   https://prismprotocol.xyz/api/publisher/click/<publisherWallet>/<websiteUrl>/<auctionWinnerId>
+   ```
+
+#### Get all publisher stats by website url:
+- Requisits: Publisher website url must be given to the Prism team.
+- Returns: publisher stats
+   ```typescript
+      https://prismprotocol.xyz/api/publisher/<publisherWallet>/<websiteUrl>
+   ```
+## PrismClient SDK
+
+As the client library us not yet on npm we suggest to get the Class from this repo:
 To import and initialize the `PrismClient`, follow these steps:
 
 1. Import the `PrismClient` in your component:
