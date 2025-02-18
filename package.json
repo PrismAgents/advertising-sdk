@@ -1,14 +1,22 @@
 {
   "name": "prism-sdk",
-  "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "version": "1.0.1",
+  "description": "Typescript client for Prism protocol onchain advertising",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "prepare": "npm run build",
+    "test": "npx ts-node src/test/index.test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrismAgents/advertising-sdk"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "Prism Protocol Team",
+  "license": "MIT",
   "devDependencies": {
     "typescript": "^5.7.2"
   },
