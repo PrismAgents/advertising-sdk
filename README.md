@@ -2,6 +2,9 @@
 
 Before you can use the `PrismClient`, ensure that the publisher address and publisher website URL are whitelisted by the Prism Protocol team. This is essential to utilize the SDK for publishing ads and generating revenue.
 
+# Beta version 
+   - advertising-sdk is in beta version and smart contracts are deployed on arbitrum sepolia network.
+   
 # Two options to integrate with Prism Protocol
 - By using the PrismClient SDK
 - By using the Prism Publisher API
