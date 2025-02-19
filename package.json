@@ -3,7 +3,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": ["dist"],
-  "version": "1.0.4",
+  "version": "1.0.7",
   "description": "Typescript client for Prism protocol onchain advertising",
   "scripts": {
     "build": "tsc",
