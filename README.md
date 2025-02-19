@@ -2,10 +2,8 @@
 
 Before you can use the `PrismClient`, ensure that the publisher address whitelisted by the Prism Protocol team. This is essential to utilize the SDK for publishing ads and generating revenue.
 
-Please refer to the [Prism Protocol documentation](https://github.com/PrismAgents/documentation/wiki/TINT-Home) for more information on how to get whitelisted.
-
-### Beta version 
-   - The Advertising-sdk is in beta version and smart contracts are deployed on arbitrum sepolia network.
+## Get an API Key
+Please refer to the [Prism Protocol documentation](https://github.com/PrismAgents/documentation/wiki/TINT-Home) for more information on how to get an API KEY & get whitelisted as publisher.
 
 # Two options to integrate with Prism Protocol
 - By using the PrismClient SDK
@@ -26,11 +24,7 @@ import { PrismClient } from 'prism-sdk';
 1. Initialize the `PrismClient` with your publisher address;
 - Ensure Publisher is whitelisted  in the Prism contract before initializing the `PrismClient`
    ```typescript
-    const prismClient = new PrismClient(
-        PROVIDER_URL,
-        PUBLISHER_WL_ADDRESS
-    );
-
+    const prismClient = new PrismClient(API_KEY);
     const result = await prismClient.triggerAuction(WALLET_ADDRESS, PUBLISHER_WL_ADDRESS);
     assert.ok(result.id, "default-campaign");
    ```
@@ -42,8 +36,8 @@ Make sure to handle the responses from these methods appropriately to ensure acc
 
 ## Prism Publisher API
 
-### Configuration
-   - config.json contains the prism-contract address and the provider url
+#### API Key
+  - header: 'x-api-key': <your-api-key>,
 
 #### Trigger auction:
 - Requisits: Publisher wallet address must be whitelisted by the Prism Protocol team.
