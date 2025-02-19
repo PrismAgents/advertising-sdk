@@ -1,20 +1,10 @@
 import { ethers } from "ethers";
-import accountingAbi from "./abi/PrismAccounting.json";
 import config from "./config.json";
 
-
 export class PrismClient {
-    prismApiUrl: string;
-    constructor(JsonRpcProvider: string, publisherAddress: string) {
-        const accountingContract = new ethers.Contract(
-            config["prism-contract"],
-            accountingAbi,
-            new ethers.JsonRpcProvider(JsonRpcProvider)
-        );
-
-        accountingContract.isPublisher(publisherAddress).then((isPublisher: boolean) => {
-            if (!isPublisher) throw new Error('Publisher not whitelisted, please register on app.prismprotocol.xyz/publishers');
-        });
+    apiKey: string;
+    constructor(apiKey: string) {
+        this.apiKey = apiKey;
     }
 
     async triggerAuction(publisher: string, wallet: string): Promise<any> {
@@ -36,11 +26,14 @@ export class PrismClient {
     async fetchData(endpoint: string, method: string, body?: any): Promise<any> {
         const _endpoint = `${config["prism-api"]}${endpoint}`;
         try {
-           
-            console.log('endpoint::', _endpoint);
+        
             const response = await fetch(_endpoint, {
                 method: method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-api-key': this.apiKey,
+                    'Access-Control-Allow-Origin': '*'
+                },
                 body: body ? JSON.stringify(body) : undefined,
             });
             if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
