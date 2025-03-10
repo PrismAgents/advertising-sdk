@@ -5,6 +5,9 @@ Before you can use the `PrismClient`, ensure that the publisher address whitelis
 ## Get an API Key
 Please refer to the [Prism Protocol documentation](https://github.com/PrismAgents/documentation/wiki/TINT-Home) for more information on how to get an API KEY & get whitelisted as publisher.
 
+## Demo 
+- [Publisher website](https://tint.prismprotocol.xyz/client)
+- Implementation [example](https://github.com/PrismAgents/advertising-sdk-publisher-demo/blob/main/src/pages/api/route.ts) with NextJS
 # Two options to integrate with Prism Protocol
 - By using the PrismClient SDK
 - By using the Prism Publisher API
