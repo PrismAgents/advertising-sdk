@@ -7,38 +7,40 @@ export class PrismClient {
         this.apiKey = apiKey;
     }
 
-    async triggerAuction(publisher: string, wallet: string): Promise<any> {
-        return this.fetchData(`/auction/${publisher}/${wallet}`, 'POST');
+    async triggerAuction(publisher: string, wallet: string, websiteUrl: string): Promise<any> {
+        return this.fetchData(`/auction`, 'POST', { publisher, wallet, websiteUrl });
     }
 
     async handleUserClick(publisher: string, websiteUrl: string, winnerId: any): Promise<any> {
-        return this.fetchData(`/publisher/click/${publisher}/${websiteUrl}/${winnerId}`, 'POST');
+        return this.fetchData(`/publisher/click`, 'POST', { publisher, websiteUrl, winnerId });
     }
 
     async sendViewedFeedback(publisher: string, websiteUrl: string, winnerId: any): Promise<any> {
-        return this.fetchData(`/publisher/impressions/${publisher}/${websiteUrl}/${winnerId}`, 'POST');
+        return this.fetchData(`/publisher/impressions`, 'POST', { publisher, websiteUrl, winnerId });
     }
 
     async getAllPublisherStatsForOwnerByWebsiteUrl(publisher: string, websiteUrl: string): Promise<any> {
-        return this.fetchData(`/publisher/${publisher}/${websiteUrl}`, 'GET');
+        return this.fetchData(`/publisher/stats`, 'GET', { publisher, websiteUrl });
     }
 
-    async fetchData(endpoint: string, method: string, body?: any): Promise<any> {
+    async fetchData(endpoint: string, method: string, body: any): Promise<any> {
         const _endpoint = `${config["prism-api"]}${endpoint}`;
         try {
-        
+
             const response = await fetch(_endpoint, {
                 method: method,
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'x-api-key': this.apiKey,
                     'Access-Control-Allow-Origin': '*'
                 },
-                body: body ? JSON.stringify(body) : undefined,
+                body: JSON.stringify(body),
             });
-            if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-            const data = await response.json();
-            return data;
+            if (response.status !== 200) {
+                const errorMessage = await response.text(); // Capture the error message from the server
+                return { status: response.status, message: `HTTP error! status: ${response.status}, message: ${errorMessage}` }; // Include the error message
+            }
+            return await response.json();
         } catch (error) {
             console.error(`Error with fetch operation:`, _endpoint, error);
             return error;

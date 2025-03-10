@@ -1,4 +1,4 @@
 {
     "prism-contract": "0xF2720929421eEFa11dBe627d818A9D0E68372f08",
-    "prism-api": "https://tint.prismprotocol.xyz/api"
+    "prism-api": "https://tint.prismprotocol.xyz/service/api/sdk"
 }
