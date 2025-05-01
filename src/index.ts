@@ -1,35 +1,63 @@
-import { ethers } from "ethers";
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import config from "./config.json";
 
+/**
+ * Response from API endpoints
+ */
+interface PrismResponse<T = unknown> {
+    status: number;
+    message?: string;
+    data?: T;
+}
+
+/**
+ * Parameters for user interaction events
+ */
+interface UserInteractionParams {
+    publisherAddress: string;
+    websiteUrl: string;
+    campaignId: string | number;
+}
+
+/**
+ * Source for API endpoints
+ */
+type ApiSource = "enclave" | "api";
+
+/**
+ * HTTP methods
+ */
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+
 export class PrismClient {
-    apiKey: string;
+    private readonly apiKey: string;
+
     constructor(
-        pemFilePath: string,
         apiKey: string
     ) {
         this.apiKey = apiKey;
     }
 
-    encryptAddress(address: string) {
+    /**
+     * Encrypts an Ethereum address using the SDK's public key
+     * @param address Ethereum address to encrypt
+     * @returns Base64 encoded encrypted address
+     */
+    public encryptAddress(address: string): string {
         try {
-            console.log("Starting encryption process...");
-    
             const pemFilePath = path.resolve(__dirname, 'sdk-kms.pem');
             // 1. Read the PEM public key directly using the resolved path
             const publicKeyPem = fs.readFileSync(pemFilePath, 'utf8');
-            console.log("Public key loaded from PEM file");
-    
+            
             // 2. Create public key object
             const publicKey = crypto.createPublicKey({
                 key: publicKeyPem,
                 format: 'pem',
                 type: 'spki',
             });
-    
-            console.log("Encrypting...");
+            
             const encrypted = crypto.publicEncrypt(
                 {
                     key: publicKey,
@@ -38,54 +66,103 @@ export class PrismClient {
                 },
                 Buffer.from(address)
             );
-    
-            console.log("Encryption completed");
+            
             return encrypted.toString('base64');
-    
         } catch (error) {
             console.error("Encryption error:", error);
             throw error;
         }
     }
 
-    async triggerAuction(publisher: string, publisherDomain: string, wallet: string): Promise<any> {
+
+    /** 
+     * Call AWS Nitro Enclave to solve auction for a user's connected wallet
+     * @param publisher Publisher's Ethereum address
+     * @param publisherDomain Publisher's domain
+     * @param wallet User's Ethereum address
+     * @returns Auction result
+     */
+    public async auction(
+        publisher: string, 
+        publisherDomain: string, 
+        wallet: string
+    ): Promise<PrismResponse> {
         return this.fetchData(
-                "enclave", 
-                `/auction`, 'POST',
-                {   
-                    publisher_address: publisher, 
-                    user_address: this.encryptAddress(wallet),
-                    publisher_domain: publisherDomain
-                }
-            );
+            "enclave", 
+            "/auction", 
+            "POST",
+            {   
+                publisher_address: publisher, 
+                user_address: this.encryptAddress(wallet),
+                publisher_domain: publisherDomain
+            }
+        );
     }
 
-    async handleUserClick(publisher: string, websiteUrl: string, winnerId: any): Promise<any> {
-        const body = {
-            publisherAddress:publisher,
-            websiteUrl:websiteUrl,
-            campaignId:winnerId
-        }
+    /**
+     * Handles user click event
+     * @param publisher Publisher's Ethereum address
+     * @param websiteUrl Website URL where click occurred
+     * @param winnerId Campaign ID that was clicked
+     * @returns Click handling result
+     */
+    public async clicks(
+        publisher: string, 
+        websiteUrl: string, 
+        winnerId: string | number
+    ): Promise<PrismResponse> {
+        const body: UserInteractionParams = {
+            publisherAddress: publisher,
+            websiteUrl: websiteUrl,
+            campaignId: winnerId
+        };
 
-        console.log('SDK -> handleUserClick',body);
-        return this.fetchData("api", `/click`, 'POST', body);
+        return this.fetchData("api", "/click", "POST", body);
     }
 
-    async sendViewedFeedback(publisher: string, websiteUrl: string, winnerId: any): Promise<any> {
-        const body = {
-            publisherAddress:publisher,
-            websiteUrl:websiteUrl,
-            campaignId:winnerId
-        }
+    /**
+     * Sends impression feedback
+     * @param publisher Publisher's Ethereum address
+     * @param websiteUrl Website URL where impression occurred
+     * @param winnerId Campaign ID that was viewed
+     * @returns Impression feedback result
+     */
+    public async impressions(
+        publisher: string, 
+        websiteUrl: string, 
+        winnerId: string | number
+    ): Promise<PrismResponse> {
+        const body: UserInteractionParams = {
+            publisherAddress: publisher,
+            websiteUrl: websiteUrl,
+            campaignId: winnerId
+        };
 
-        console.log('SDK -> sendViewedFeedback',body);
-        return this.fetchData("api", `/impressions`, 'POST', body);
+        return this.fetchData("api", "/impressions", "POST", body);
     }
 
-    async fetchData(source: "enclave" | "api", endpoint: string, method: string, body: any): Promise<any> {
-        const _endpoint = `${source === "enclave" ? config["prism-enclave-url"] : config["prism-api-url"]}${endpoint}`;
+    /**
+     * Fetch data from Prism API endpoints
+     * @param source API source ("enclave" or "api")
+     * @param endpoint API endpoint
+     * @param method HTTP method
+     * @param body Request body
+     * @returns API response
+     */
+    private async fetchData(
+        source: ApiSource, 
+        endpoint: string, 
+        method: HttpMethod, 
+        body: unknown
+    ): Promise<PrismResponse> {
+        const baseUrl = source === "enclave" 
+            ? config["prism-enclave-url"] 
+            : config["prism-api-url"];
+        
+        const url = `${baseUrl}${endpoint}`;
+        
         try {
-            const response = await fetch(_endpoint, {
+            const response = await fetch(url, {
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
@@ -94,16 +171,26 @@ export class PrismClient {
                 },
                 body: JSON.stringify(body),
             });
-            if (response.status !== 200) {
-                const errorMessage = await response.text(); // Capture the error message from the server
-                return { status: response.status, message: `HTTP error! status: ${response.status}, message: ${errorMessage}` }; // Include the error message
+            
+            if (!response.ok) {
+                const errorMessage = await response.text();
+                return { 
+                    status: response.status, 
+                    message: `HTTP error! status: ${response.status}, message: ${errorMessage}` 
+                };
             }
-            return await response.json();
+            
+            const data = await response.json();
+            return {
+                status: response.status,
+                data
+            };
         } catch (error) {
-            console.error(`Error with fetch operation:`, _endpoint, error);
-            return error;
+            console.error(`Error with fetch operation:`, url, error);
+            return { 
+                status: 500, 
+                message: error instanceof Error ? error.message : String(error)
+            };
         }
     }
-
-
 }
