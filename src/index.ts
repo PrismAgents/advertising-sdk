@@ -6,21 +6,20 @@ import config from "./config.json";
 
 export class PrismClient {
     apiKey: string;
-    pubKeyPemPath: string;
     constructor(
         pemFilePath: string,
         apiKey: string
     ) {
         this.apiKey = apiKey;
-        this.pubKeyPemPath = pemFilePath;
     }
 
     encryptAddress(address: string) {
         try {
             console.log("Starting encryption process...");
     
+            const pemFilePath = path.resolve(__dirname, 'sdk-kms.pem');
             // 1. Read the PEM public key directly using the resolved path
-            const publicKeyPem = fs.readFileSync(this.pubKeyPemPath, 'utf8');
+            const publicKeyPem = fs.readFileSync(pemFilePath, 'utf8');
             console.log("Public key loaded from PEM file");
     
             // 2. Create public key object
