@@ -7,7 +7,7 @@ b:
 publish:
 	git add . && \
 	git commit -m "update" && \
-	git push && \
+	git push --follow-tags && \
 	npm version patch && \
 	npm publish
 
