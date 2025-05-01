@@ -62,9 +62,9 @@ export class PrismClient {
 
     async handleUserClick(publisher: string, websiteUrl: string, winnerId: any): Promise<any> {
         const body = {
-            publisher:publisher,
+            publisherAddress:publisher,
             websiteUrl:websiteUrl,
-            winnerId:winnerId
+            campaignId:winnerId
         }
 
         console.log('SDK -> handleUserClick',body);
@@ -72,7 +72,14 @@ export class PrismClient {
     }
 
     async sendViewedFeedback(publisher: string, websiteUrl: string, winnerId: any): Promise<any> {
-        return this.fetchData("api", `/impressions`, 'POST', { publisher:publisher, websiteUrl:websiteUrl, winnerId:winnerId });
+        const body = {
+            publisherAddress:publisher,
+            websiteUrl:websiteUrl,
+            campaignId:winnerId
+        }
+
+        console.log('SDK -> sendViewedFeedback',body);
+        return this.fetchData("api", `/impressions`, 'POST', body);
     }
 
     async fetchData(source: "enclave" | "api", endpoint: string, method: string, body: any): Promise<any> {
