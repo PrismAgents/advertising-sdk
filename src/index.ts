@@ -1,32 +1,84 @@
 import { ethers } from "ethers";
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 import config from "./config.json";
 
 export class PrismClient {
     apiKey: string;
-    constructor(apiKey: string) {
+    pubKeyPemPath: string;
+    constructor(
+        pemFilePath: string,
+        apiKey: string
+    ) {
         this.apiKey = apiKey;
+        this.pubKeyPemPath = pemFilePath;
     }
 
-    async triggerAuction(publisher: string, wallet: string, websiteUrl: string): Promise<any> {
-        return this.fetchData(`/auction`, 'POST', { publisher, wallet, websiteUrl });
+    encryptAddress(address: string) {
+        try {
+            console.log("Starting encryption process...");
+    
+            // 1. Read the PEM public key directly using the resolved path
+            const publicKeyPem = fs.readFileSync(this.pubKeyPemPath, 'utf8');
+            console.log("Public key loaded from PEM file");
+    
+            // 2. Create public key object
+            const publicKey = crypto.createPublicKey({
+                key: publicKeyPem,
+                format: 'pem',
+                type: 'spki',
+            });
+    
+            console.log("Encrypting...");
+            const encrypted = crypto.publicEncrypt(
+                {
+                    key: publicKey,
+                    padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+                    oaepHash: 'sha256',
+                },
+                Buffer.from(address)
+            );
+    
+            console.log("Encryption completed");
+            return encrypted.toString('base64');
+    
+        } catch (error) {
+            console.error("Encryption error:", error);
+            throw error;
+        }
+    }
+
+    async triggerAuction(publisher: string, publisherDomain: string, wallet: string): Promise<any> {
+        return this.fetchData(
+                "enclave", 
+                `/auction`, 'POST',
+                {   
+                    publisher_address: publisher, 
+                    user_address: this.encryptAddress(wallet),
+                    publisher_domain: publisherDomain
+                }
+            );
     }
 
     async handleUserClick(publisher: string, websiteUrl: string, winnerId: any): Promise<any> {
-        return this.fetchData(`/publisher/click`, 'POST', { publisher, websiteUrl, winnerId });
+        const body = {
+            publisher:publisher,
+            websiteUrl:websiteUrl,
+            winnerId:winnerId
+        }
+
+        console.log('SDK -> handleUserClick',body);
+        return this.fetchData("api", `/click`, 'POST', body);
     }
 
     async sendViewedFeedback(publisher: string, websiteUrl: string, winnerId: any): Promise<any> {
-        return this.fetchData(`/publisher/impressions`, 'POST', { publisher, websiteUrl, winnerId });
+        return this.fetchData("api", `/impressions`, 'POST', { publisher:publisher, websiteUrl:websiteUrl, winnerId:winnerId });
     }
 
-    async getAllPublisherStatsForOwnerByWebsiteUrl(publisher: string, websiteUrl: string): Promise<any> {
-        return this.fetchData(`/publisher/stats`, 'GET', { publisher, websiteUrl });
-    }
-
-    async fetchData(endpoint: string, method: string, body: any): Promise<any> {
-        const _endpoint = `${config["prism-api"]}${endpoint}`;
+    async fetchData(source: "enclave" | "api", endpoint: string, method: string, body: any): Promise<any> {
+        const _endpoint = `${source === "enclave" ? config["prism-enclave-url"] : config["prism-api-url"]}${endpoint}`;
         try {
-
             const response = await fetch(_endpoint, {
                 method: method,
                 headers: {
