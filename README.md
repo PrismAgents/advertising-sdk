@@ -31,47 +31,64 @@ import { PrismClient } from 'prism-sdk';
 const client = new PrismClient('your-api-key');
 ```
 
-### API Methods
+### Get Auction Winner Campaign from Nitro Enclave TEE
 
 ```typescript
 // Trigger an auction when publisher wants to display an ad
-const auctionResult = await client.auction(
+await client.auction(
   'publisher-address',     // Publisher's Ethereum address
   'publisher-domain.com',  // Publisher's domain
   'user-wallet-address'    // User's Ethereum address
 );
+```
+- Auction Response
+```typescript
+{
+    "status": "success",
+    "data": {
+        "campaignId": "0xcb67...4c4ad",
+        "bannerIpfsUri": "https://ad-winner-banner.com/img.png",
+        "url": "https://auction-winner-url.com",
+        "campaignName": "TeddyBird"
+    }
+}
+```
 
-// Handle a user click on an ad (call this on img onClick())
-const clickResult = await client.clicks(
-  'publisher-address',     // Publisher's Ethereum address
-  'website-url.com',       // Website URL where click occurred
-  'campaign-id'            // Campaign ID that was clicked
-);
 
-// Send an impression when ad is viewed (call this on img onLoad())
-const viewResult = await client.impressions(
+### - Register ads impressions
+
+```typescript
+await client.impressions(
   'publisher-address',     // Publisher's Ethereum address
   'website-url.com',       // Website URL where impression occurred
-  'campaign-id'            // Campaign ID that was viewed
+  'campaign-id'            // Auction winner ID that was viewed
 );
 ```
 
-**Important:** The methods on the `PrismClient` must be called to submit feedback, reviews, and clicks. This is crucial for tracking the analytics of your publishing websites and the displayed ads on the Prism Protocol publishers' space. Additionally, it allows you to claim the profit as a publisher.
+### - Register ads clicks
+
+```typescript
+// Register clicks on ads
+await client.clicks(
+  'publisher-address',     // Publisher's Ethereum address
+  'website-url.com',       // Website URL where click occurred
+  'campaign-id'            // Auction winner ID that was clicked
+);
+```
+
+
+
+**Important:** The methods on the `PrismClient` must be called to count:
+- impressions
+- clicks
+ 
+ These are crucial for tracking and claiming publishers profit.
 
 ## Publisher Dashboard
 
 Access your analytics and earnings at the [Publisher's Dashboard](https://tint.prismprotocol.xyz/dashboard/publisher)
 
 ![Dashboard](./src/img/my-domains.png)
-
-## Prism Publisher API
-
-### API Documentation
-
-- [SDK Swagger Documentation](https://tint.prismprotocol.xyz/service/api/sdk)
-- ⚠️ Remember to add the header: 'x-api-key': <your-api-key>, in all requests ⚠️
-
-![Swagger](./src/img/sdk-docs.png)
 
 ## Development
 
@@ -85,11 +102,8 @@ npm run dev
 # Run tests
 npm test
 
-# Type check
-npm run typecheck
-
 # Build for production
-npm run build
+npm run start
 ```
 
 ## License
