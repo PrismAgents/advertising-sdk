@@ -3,6 +3,17 @@ import path from 'path';
 import crypto from 'crypto';
 import config from "./config.json";
 
+
+const SDK_KMS_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJxeNGaN0dT35BkiRTEp
+Gc01x12qPKW0h5f5EZs5UuW0d46GJe3Qusve34RaPbY2ZGBQ0ds0nghnZZwy5IBx
+LQxAx5Pr6QP8NQvm9so69OfW0nAK4f5oN7tvQwS8y0RcBEKf3zP3Zt1MS4mJrTRX
+h/OpchAPCTDD0faKuhUjjJQ+i399onzmdICmmaYAP6ltw050VGgOR5pjnHSgJk5K
+q0iF2HJv5U2Zgxn7d1pGzM/VNpGY8rjZSXsCwx8GCp4OZOI381k7eyzDr2nEYm7n
+/qH3r+m+2PD6jbJJp0XQGz13fwUyGY2QyFBsLvPWQ8Qr/SSAjS65f3UcPdTtOy0C
+rwIDAQAB
+-----END PUBLIC KEY-----`;
+
 /**
  * Response from API endpoints
  */
@@ -47,13 +58,9 @@ export class PrismClient {
      */
     public encryptAddress(address: string): string {
         try {
-            const pemFilePath = path.resolve(__dirname, 'sdk-kms.pem');
-            // 1. Read the PEM public key directly using the resolved path
-            const publicKeyPem = fs.readFileSync(pemFilePath, 'utf8');
-            
-            // 2. Create public key object
+            // 2. Create public key object from the embedded constant
             const publicKey = crypto.createPublicKey({
-                key: publicKeyPem,
+                key: SDK_KMS_PUBLIC_KEY_PEM, // Use the constant
                 format: 'pem',
                 type: 'spki',
             });
@@ -70,7 +77,7 @@ export class PrismClient {
             return encrypted.toString('base64');
         } catch (error) {
             console.error("Encryption error:", error);
-            throw error;
+            throw new Error(`Encryption failed: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
