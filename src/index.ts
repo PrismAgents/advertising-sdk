@@ -6,7 +6,7 @@ import config from "./config.json";
 /**
  * Response from API endpoints
  */
-interface PrismResponse<T = unknown> {
+export interface PrismResponse<T = unknown> {
     status: number;
     message?: string;
     data?: T;
@@ -15,7 +15,7 @@ interface PrismResponse<T = unknown> {
 /**
  * Parameters for user interaction events
  */
-interface UserInteractionParams {
+export interface UserInteractionParams {
     publisherAddress: string;
     websiteUrl: string;
     campaignId: string | number;
@@ -76,13 +76,13 @@ export class PrismClient {
 
 
     /** 
-     * Call AWS Nitro Enclave to solve auction for a user's connected wallet
+     * Call AWS Nitro Enclave to solve auction for a user's attention
      * @param publisher Publisher's Ethereum address
      * @param publisherDomain Publisher's domain
      * @param wallet User's Ethereum address
      * @returns Auction result
      */
-    public async auction(
+    public async triggerAuction(
         publisher: string, 
         publisherDomain: string, 
         wallet: string
@@ -106,7 +106,7 @@ export class PrismClient {
      * @param winnerId Campaign ID that was clicked
      * @returns Click handling result
      */
-    public async clicks(
+    public async handleUserClick(
         publisher: string, 
         websiteUrl: string, 
         winnerId: string | number
@@ -127,7 +127,7 @@ export class PrismClient {
      * @param winnerId Campaign ID that was viewed
      * @returns Impression feedback result
      */
-    public async impressions(
+    public async sendViewedFeedback(
         publisher: string, 
         websiteUrl: string, 
         winnerId: string | number
