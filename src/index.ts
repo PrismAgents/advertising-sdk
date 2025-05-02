@@ -82,7 +82,7 @@ export class PrismClient {
      * @param wallet User's Ethereum address
      * @returns Auction result
      */
-    public async triggerAuction(
+    public async auction(
         publisher: string, 
         publisherDomain: string, 
         wallet: string
@@ -106,7 +106,7 @@ export class PrismClient {
      * @param winnerId Campaign ID that was clicked
      * @returns Click handling result
      */
-    public async handleUserClick(
+    public async clicks(
         publisher: string, 
         websiteUrl: string, 
         winnerId: string | number
@@ -127,7 +127,7 @@ export class PrismClient {
      * @param winnerId Campaign ID that was viewed
      * @returns Impression feedback result
      */
-    public async sendViewedFeedback(
+    public async impressions(
         publisher: string, 
         websiteUrl: string, 
         winnerId: string | number
