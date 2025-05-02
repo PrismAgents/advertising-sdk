@@ -1,6 +1,5 @@
 {
     "prism-contract": "0xF2720929421eEFa11dBe627d818A9D0E68372f08",
     "prism-api-url": "https://tint-api-prod.up.railway.app/service/api/sdk/publisher",
-    "prism-enclave-url": "https://prism-enclave.xyz",
-    "kms-pub-key-path": "./sdk-kms.pem"
+    "prism-enclave-url": "https://prism-enclave.xyz"
 }
