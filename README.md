@@ -17,7 +17,7 @@ yarn add prism-sdk
 
 ## Publisher SDK Demo
 
-- [Publisher website](https://tint.prismprotocol.xyz/client)
+- [Publisher website](https://prism-ads-publisher-1.netlify.app/)
 - Implementation [example](https://github.com/PrismAgents/advertising-sdk-publisher-demo/blob/main/src/pages/api/route.ts) with NextJS
 
 ## Usage
@@ -31,7 +31,7 @@ import { PrismClient } from 'prism-sdk';
 const client = new PrismClient('your-api-key');
 ```
 
-### Get Auction Winner Campaign from Nitro Enclave TEE
+### - Get Auction Winner Campaign from Nitro Enclave TEE
 
 ```typescript
 // Trigger an auction when publisher wants to display an ad
