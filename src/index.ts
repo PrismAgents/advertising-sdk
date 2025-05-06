@@ -159,7 +159,7 @@ export class PrismClient {
             campaignId: winnerId
         };
 
-        return this.fetchData("api", "/click", "POST", jwtToken, body);
+        return this.fetchData("api", "/clicks", "POST", jwtToken, body);
     }
 
     /**
