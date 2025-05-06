@@ -6,7 +6,7 @@ import config from "./config.json";
  * 
  * {
     "status": "success",
-    "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjYW1wYWlnbl9pZCI6IjB4Y2I2N2NhY2RkNGUzMzc4MzQ3NjgyNDUxNTA1MTkxM2MyM2VjMGVlNjk5YTM0ZWI0MDZmMjI0MDA5MmFhYzRhZCIsInRpbWVzdGFtcCI6IjIwMjUtMDUtMDZUMTI6NDI6MzcuMTU1MzYwKzAwOjAwIiwiZXhwIjoxNzQ2NTM1NjU3fQ.NHKUNJ0vTnuSpyU09X_cnwxMy5c6K3NvkHTN4ZjcU7U",
+    "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjs2N2NhY2RkNGUzMzc4MzQ3NjgyNDUxNTA1MTkxM2MyM2VjMGVlNjk5YTM0ZWI0MDZmMjI0MDA5MmFhYzRhZCIsInRpbWVzdGFtcCI6IjIwMjUtMDUtMDZUMTI6NDI6MzcuMTU1MzYwKzAwOjAwIiwiZXhwIjoxNzQ2NTM1NjU3fQ.NHKUNJ0vTnuSpyU09X_cnwxMy5c6K3NvkHTN4ZjcU7U",
     "data": {
         "campaignId": "0xcb67cacdd4e33783476824515051913c23ec0ee699a34eb406f2240092aac4ad",
         "bannerIpfsUri": "https://aqua-holy-rhinoceros-561.mypinata.cloud/ipfs/bafybeihra7bkupgkuj7t6us2ocsn7ibttjzgdcnzxbnglnot4ks54jvf4y/Screenshot%202025-04-30%20at%2011.55.32%E2%80%AFAM.png",
