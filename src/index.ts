@@ -139,19 +139,19 @@ export class PrismClient {
      * Handles user click event
      * @param publisher Publisher's Ethereum address
      * @param websiteUrl Website URL where click occurred
-     * @param winnerId Campaign ID that was clicked
+     * @param campaignId Campaign ID that was clicked
      * @returns Click handling result
      */
     public static async clicks(
         publisher: string, 
         websiteUrl: string, 
-        winnerId: string,
+        campaignId: string,
         jwtToken: string,
     ): Promise<PrismResponse> {
         const body: UserInteractionParams = {
             publisherAddress: publisher,
             websiteUrl: websiteUrl,
-            campaignId: winnerId
+            campaignId: campaignId
         };
 
         return this.fetchData("api", "/clicks", jwtToken, body);
@@ -161,19 +161,19 @@ export class PrismClient {
      * Sends impression feedback
      * @param publisher Publisher's Ethereum address
      * @param websiteUrl Website URL where impression occurred
-     * @param winnerId Campaign ID that was viewed
+     * @param campaignId Campaign ID that was viewed
      * @returns Impression feedback result
      */
     public static async impressions(
         publisher: string, 
         websiteUrl: string, 
-        winnerId: string,
+        campaignId: string,
         jwtToken: string,
     ): Promise<PrismResponse> {
         const body: UserInteractionParams = {
             publisherAddress: publisher,
             websiteUrl: websiteUrl,
-            campaignId: winnerId
+            campaignId: campaignId
         };
 
         return this.fetchData("api", "/impressions", jwtToken, body);
