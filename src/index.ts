@@ -117,9 +117,9 @@ export class PrismClient {
         publisher: string, 
         publisherDomain: string, 
         wallet: string
-    ): Promise<PrismResponse> {
+    ): Promise<PrismWinner> {
         const encryptedAddress = await this.encryptAddress(wallet);
-        return this.fetchData(
+        const response : any = await this.fetchData(
             "enclave", 
             "/auction", 
             "POST",
@@ -130,6 +130,14 @@ export class PrismClient {
                 publisher_domain: publisherDomain
             }
         );
+        return {
+            bannerIpfsUri: response.data.bannerIpfsUri,
+            campaignId: response.data.campaignId,
+            campaignName: response.data.campaignName,
+            jwt_token: response.data.jwt_token,
+            url: response.data.url
+        }
+
     }
 
     /**
