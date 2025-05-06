@@ -54,10 +54,6 @@ export interface UserInteractionParams {
  */
 type ApiSource = "enclave" | "api";
 
-/**
- * HTTP methods
- */
-type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 export class PrismClient {
 
@@ -121,8 +117,7 @@ export class PrismClient {
         const encryptedAddress = await this.encryptAddress(wallet);
         const response : any = await this.fetchData(
             "enclave", 
-            "/auction", 
-            "POST",
+            "/auction",
             null,
             {   
                 publisher_address: publisher, 
@@ -159,7 +154,7 @@ export class PrismClient {
             campaignId: winnerId
         };
 
-        return this.fetchData("api", "/clicks", "POST", jwtToken, body);
+        return this.fetchData("api", "/clicks", jwtToken, body);
     }
 
     /**
@@ -181,7 +176,7 @@ export class PrismClient {
             campaignId: winnerId
         };
 
-        return this.fetchData("api", "/impressions", "POST", jwtToken, body);
+        return this.fetchData("api", "/impressions", jwtToken, body);
     }
 
     /**
@@ -195,7 +190,6 @@ export class PrismClient {
     private static async fetchData(
         source: ApiSource, 
         endpoint: string, 
-        method: HttpMethod, 
         jwtToken: string | null,
         body: unknown
     ): Promise<PrismResponse> {
@@ -207,7 +201,7 @@ export class PrismClient {
         
         try {
             const response = await fetch(url, {
-                method: method,
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     ...(jwtToken ? {'Authorization': `Bearer ${jwtToken}`} : {}),
