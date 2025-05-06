@@ -16,7 +16,7 @@ yarn add prism-sdk
 ## Publisher SDK Demo
 
 - [Publisher website](https://prism-ads-publisher-1.netlify.app/)
-- Implementation [example](https://github.com/PrismAgents/advertising-sdk-publisher-demo/blob/main/src/pages/index.ts) with NextJS
+- Implementation [example](https://github.com/PrismAgents/advertising-sdk-publisher-demo/blob/main/src/pages/index.txs) with NextJS
 
 ## Usage
 
