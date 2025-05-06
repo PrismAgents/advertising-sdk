@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import config from "./config.json";
 
 
+// Key to encrypt user's address for anonymous advertising
 const SDK_KMS_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJxeNGaN0dT35BkiRTEp
 Gc01x12qPKW0h5f5EZs5UuW0d46GJe3Qusve34RaPbY2ZGBQ0ds0nghnZZwy5IBx
@@ -41,13 +42,6 @@ type ApiSource = "enclave" | "api";
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 export class PrismClient {
-    private readonly apiKey: string;
-
-    constructor(
-        apiKey: string
-    ) {
-        this.apiKey = apiKey;
-    }
 
     /**
      * Encrypts an Ethereum address using the SDK's public key
@@ -96,6 +90,7 @@ export class PrismClient {
             "enclave", 
             "/auction", 
             "POST",
+            null,
             {   
                 publisher_address: publisher, 
                 user_address: this.encryptAddress(wallet),
@@ -114,7 +109,8 @@ export class PrismClient {
     public async clicks(
         publisher: string, 
         websiteUrl: string, 
-        winnerId: string | number
+        winnerId: string,
+        jwtToken: string,
     ): Promise<PrismResponse> {
         const body: UserInteractionParams = {
             publisherAddress: publisher,
@@ -122,7 +118,7 @@ export class PrismClient {
             campaignId: winnerId
         };
 
-        return this.fetchData("api", "/click", "POST", body);
+        return this.fetchData("api", "/click", "POST", jwtToken, body);
     }
 
     /**
@@ -135,7 +131,8 @@ export class PrismClient {
     public async impressions(
         publisher: string, 
         websiteUrl: string, 
-        winnerId: string | number
+        winnerId: string,
+        jwtToken: string,
     ): Promise<PrismResponse> {
         const body: UserInteractionParams = {
             publisherAddress: publisher,
@@ -143,7 +140,7 @@ export class PrismClient {
             campaignId: winnerId
         };
 
-        return this.fetchData("api", "/impressions", "POST", body);
+        return this.fetchData("api", "/impressions", "POST", jwtToken, body);
     }
 
     /**
@@ -158,6 +155,7 @@ export class PrismClient {
         source: ApiSource, 
         endpoint: string, 
         method: HttpMethod, 
+        jwtToken: string | null,
         body: unknown
     ): Promise<PrismResponse> {
         const baseUrl = source === "enclave" 
@@ -171,7 +169,7 @@ export class PrismClient {
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-api-key': this.apiKey,
+                    ...(jwtToken ? {'Authorization': `Bearer ${jwtToken}`} : {}),
                     'Access-Control-Allow-Origin': '*'
                 },
                 body: JSON.stringify(body),

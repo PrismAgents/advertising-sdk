@@ -242,5 +242,65 @@ describe("PrismClient", () => {
                 message: "Network error"
             });
         });
+
+        // Addresses interacted with uniswap v3 & v4 on all chains supported
+// https://app.gitbook.com/o/6TiAGJx1zk5l8qGICwUF/s/DqeVX4h920HNCXWhIjVJ/~/changes/5/getting-started/supported-chains
+const SAMPLE_ONCHAIN_HISTORY_ADDRESSES_SET = [
+    "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+    "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+    "0xf1D7CC64Fb4452F05c498126312eBE29f30Fbcf9",
+    "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "0x0c3c1c532F1e39EdF36BE9Fe0bE1410313E074Bf",
+    "0x4A7b5Da61326A6379179b40d00F57E5bbDC962c2",
+    "0x9e5A52f57b3038F1B8EeE45F28b3C1967e22799C",
+    "0xedf6066a2b290C185783862C7F4776A2C8077AD1",
+    "0x9e5A52f57b3038F1B8EeE45F28b3C1967e22799C",
+    "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6",
+    "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6",
+    "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "0x0F797dC7efaEA995bB916f268D919d0a1950eE3C",
+    "0xa00F34A632630EFd15223B1968358bA4845bEEC7",
+    "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+    "0x541aB7c31A119441eF3575F6973277DE0eF460bd",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493bae0",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493baf1",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A5",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A6",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A7",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A8",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493baf2",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493baf3",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493baf4",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493baf5",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493baf6",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493baf7",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493baf8",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493baf9",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493bafa",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493bab0",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493bab1",
+    "0x68f6e289ede9b1559aae6bbd0cfaecf72493bab2",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A3",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A4",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A5",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A6",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A7",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A8",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529A9",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529AA",
+    "0x8C738F9D0994090cB0dB64b6026f4d415b7529AB"
+];
+// ... existing code ...
+
+
+        test("should handle fetch exceptions", async () => {
+            let encrypted: string[] = [];
+            SAMPLE_ONCHAIN_HISTORY_ADDRESSES_SET.forEach(async (element) => {
+                encrypted.push(prismClient.encryptAddress(element));
+            });
+            console.log(encrypted);
+        });
     });
 });
