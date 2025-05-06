@@ -204,8 +204,7 @@ export class PrismClient {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(jwtToken ? {'Authorization': `Bearer ${jwtToken}`} : {}),
-                    'Access-Control-Allow-Origin': '*'
+                    ...(jwtToken ? {'Authorization': `${jwtToken}`} : {}),
                 },
                 body: JSON.stringify(body),
             });
