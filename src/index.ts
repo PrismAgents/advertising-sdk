@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import config from "./config.json";
 
 
@@ -62,30 +61,44 @@ export class PrismClient {
      * @param address Ethereum address to encrypt
      * @returns Base64 encoded encrypted address
      */
-    public static encryptAddress(address: string): string {
+
+    public static async encryptAddress(address: string): Promise<string> {
         try {
-            // 2. Create public key object from the embedded constant
-            const publicKey = crypto.createPublicKey({
-                key: SDK_KMS_PUBLIC_KEY_PEM, // Use the constant
-                format: 'pem',
-                type: 'spki',
-            });
-            
-            const encrypted = crypto.publicEncrypt(
-                {
-                    key: publicKey,
-                    padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-                    oaepHash: 'sha256',
-                },
-                Buffer.from(address)
-            );
-            
-            return encrypted.toString('base64');
+          const encoder = new TextEncoder();
+          const data = encoder.encode(address);
+    
+          // Convert PEM to ArrayBuffer
+          const pem = SDK_KMS_PUBLIC_KEY_PEM
+            .replace(/-----BEGIN PUBLIC KEY-----/, '')
+            .replace(/-----END PUBLIC KEY-----/, '')
+            .replace(/\s/g, '');
+          const binaryDer = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
+    
+          // Import the public key
+          const publicKey = await window.crypto.subtle.importKey(
+            'spki',
+            binaryDer.buffer,
+            {
+              name: 'RSA-OAEP',
+              hash: 'SHA-256',
+            },
+            false,
+            ['encrypt']
+          );
+    
+          // Encrypt the address
+          const encrypted = await window.crypto.subtle.encrypt(
+            { name: 'RSA-OAEP' },
+            publicKey,
+            data
+          );
+    
+          return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
         } catch (error) {
-            console.error("Encryption error:", error);
-            throw new Error(`Encryption failed: ${error instanceof Error ? error.message : String(error)}`);
+          console.error('Encryption error:', error);
+          throw new Error(`Encryption failed: ${error instanceof Error ? error.message : String(error)}`);
         }
-    }
+      }
 
 
     /** 
@@ -100,6 +113,7 @@ export class PrismClient {
         publisherDomain: string, 
         wallet: string
     ): Promise<PrismResponse> {
+        const encryptedAddress = await this.encryptAddress(wallet);
         return this.fetchData(
             "enclave", 
             "/auction", 
@@ -107,7 +121,7 @@ export class PrismClient {
             null,
             {   
                 publisher_address: publisher, 
-                user_address: this.encryptAddress(wallet),
+                user_address: encryptedAddress,
                 publisher_domain: publisherDomain
             }
         );
