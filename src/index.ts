@@ -214,7 +214,7 @@ export class PrismClient {
             const data = await response.json();
             return {
                 status: response.status,
-                data
+                data: data.data
             };
         } catch (error) {
             console.error(`Error with fetch operation:`, url, error);
