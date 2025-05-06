@@ -11,78 +11,83 @@ yarn add prism-sdk
 ```
 
 ## Auth
-
-- API Key: Please refer to the [Prism Protocol documentation](https://github.com/PrismAgents/documentation/wiki/TINT-Home) for more information on how to get an API KEY & get whitelisted as publisher.
 - Address whitelisted: Please refer to the [Prism Protocol documentation](https://github.com/PrismAgents/documentation/wiki/TINT-Home) for more information on how to get whitelisted as publisher.
 
 ## Publisher SDK Demo
 
 - [Publisher website](https://prism-ads-publisher-1.netlify.app/)
-- Implementation [example](https://github.com/PrismAgents/advertising-sdk-publisher-demo/blob/main/src/pages/api/route.ts) with NextJS
+- Implementation [example](https://github.com/PrismAgents/advertising-sdk-publisher-demo/blob/main/src/pages/index.ts) with NextJS
 
 ## Usage
 
 ### Import and Initialize
 
 ```typescript
-import { PrismClient } from 'prism-sdk';
-
-// Initialize the client with your API key
-const client = new PrismClient('your-api-key');
+import { PrismClient ,PrismWinner} from 'prism-sdk';
 ```
 
 ### - Get Auction Winner Campaign from Nitro Enclave TEE
 
 ```typescript
-// Trigger an auction when publisher wants to display an ad
-await client.auction(
-  'publisher-address',     // Publisher's Ethereum address
-  'publisher-domain.com',  // Publisher's domain
-  'user-wallet-address'    // User's Ethereum address
-);
+// Trigger auction React example
+  useEffect(() => {
+      const fetchData = async () => {
+        if (address) {
+          const winner : PrismWinner = await PrismClient.auction(
+            publisherAddress,
+            publisherDomain,
+            address
+          );
+          setPrismWinner(winner);
+        }
+      };
+      fetchData();
+  }, [address]);
 ```
-- Auction Response
+- Auction Response : PrismWinner
 ```typescript
-{
-    "status": "success",
-    "data": {
-        "campaignId": "0xcb67...4c4ad",
-        "bannerIpfsUri": "https://ad-winner-banner.com/img.png",
-        "url": "https://auction-winner-url.com",
-        "campaignName": "TeddyBird"
-    }
+interface PrismWinner {
+    jwt_token: string; // SDK will add jwt token to clicks and impressions calls
+    bannerIpfsUri: string;
+    campaignId: string;
+    campaignName: string;
+    url: string;
 }
 ```
 
 
+**Important:** The methods clicks/impressions on the `PrismClient` are
+crucial for tracking and claiming publishers profit.
+
 ### - Register ads impressions
 
 ```typescript
-await client.impressions(
-  'publisher-address',     // Publisher's Ethereum address
-  'website-url.com',       // Website URL where impression occurred
-  'campaign-id'            // Auction winner ID that was viewed
-);
+// Register impressions
+await PrismClient.impressions(
+      publisherAddress,
+      publisherDomain,
+      prismWinner.campaignId,
+      prismWinner.jwt_token
+    )
 ```
 
 ### - Register ads clicks
 
+
+
+
 ```typescript
 // Register clicks on ads
-await client.clicks(
-  'publisher-address',     // Publisher's Ethereum address
-  'website-url.com',       // Website URL where click occurred
-  'campaign-id'            // Auction winner ID that was clicked
-);
+ PrismClient.clicks(
+        address,
+        prismWinner.url,
+        prismWinner.campaignId,
+        prismWinner.jwt_token
+      )
 ```
 
 
 
-**Important:** The methods on the `PrismClient` must be called to count:
-- impressions
-- clicks
- 
- These are crucial for tracking and claiming publishers profit.
 
 ## Publisher Dashboard
 
