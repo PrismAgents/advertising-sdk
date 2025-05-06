@@ -25,10 +25,15 @@ q0iF2HJv5U2Zgxn7d1pGzM/VNpGY8rjZSXsCwx8GCp4OZOI381k7eyzDr2nEYm7n
 /qH3r+m+2PD6jbJJp0XQGz13fwUyGY2QyFBsLvPWQ8Qr/SSAjS65f3UcPdTtOy0C
 rwIDAQAB
 -----END PUBLIC KEY-----`;
+ 
+export interface PrismWinner {
+    bannerIpfsUri: string;
+    campaignId: string;
+    campaignName: string;
+    jwt_token: string;
+    url: string;
+}
 
-/**
- * Response from API endpoints
- */
 export interface PrismResponse<T = unknown> {
     status: number;
     message?: string;
