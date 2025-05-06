@@ -2,6 +2,20 @@ import crypto from 'crypto';
 import config from "./config.json";
 
 
+/**
+ * 
+ * {
+    "status": "success",
+    "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjYW1wYWlnbl9pZCI6IjB4Y2I2N2NhY2RkNGUzMzc4MzQ3NjgyNDUxNTA1MTkxM2MyM2VjMGVlNjk5YTM0ZWI0MDZmMjI0MDA5MmFhYzRhZCIsInRpbWVzdGFtcCI6IjIwMjUtMDUtMDZUMTI6NDI6MzcuMTU1MzYwKzAwOjAwIiwiZXhwIjoxNzQ2NTM1NjU3fQ.NHKUNJ0vTnuSpyU09X_cnwxMy5c6K3NvkHTN4ZjcU7U",
+    "data": {
+        "campaignId": "0xcb67cacdd4e33783476824515051913c23ec0ee699a34eb406f2240092aac4ad",
+        "bannerIpfsUri": "https://aqua-holy-rhinoceros-561.mypinata.cloud/ipfs/bafybeihra7bkupgkuj7t6us2ocsn7ibttjzgdcnzxbnglnot4ks54jvf4y/Screenshot%202025-04-30%20at%2011.55.32%E2%80%AFAM.png",
+        "url": "https://www.prismprotocol.xyz/",
+        "campaignName": "TeddyBird"
+    }
+}
+ */
+
 // Key to encrypt user's address for anonymous advertising
 const SDK_KMS_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJxeNGaN0dT35BkiRTEp
@@ -48,7 +62,7 @@ export class PrismClient {
      * @param address Ethereum address to encrypt
      * @returns Base64 encoded encrypted address
      */
-    public encryptAddress(address: string): string {
+    public static encryptAddress(address: string): string {
         try {
             // 2. Create public key object from the embedded constant
             const publicKey = crypto.createPublicKey({
@@ -81,7 +95,7 @@ export class PrismClient {
      * @param wallet User's Ethereum address
      * @returns Auction result
      */
-    public async auction(
+    public static async auction(
         publisher: string, 
         publisherDomain: string, 
         wallet: string
@@ -106,7 +120,7 @@ export class PrismClient {
      * @param winnerId Campaign ID that was clicked
      * @returns Click handling result
      */
-    public async clicks(
+    public static async clicks(
         publisher: string, 
         websiteUrl: string, 
         winnerId: string,
@@ -128,7 +142,7 @@ export class PrismClient {
      * @param winnerId Campaign ID that was viewed
      * @returns Impression feedback result
      */
-    public async impressions(
+    public static async impressions(
         publisher: string, 
         websiteUrl: string, 
         winnerId: string,
@@ -151,7 +165,7 @@ export class PrismClient {
      * @param body Request body
      * @returns API response
      */
-    private async fetchData(
+    private static async fetchData(
         source: ApiSource, 
         endpoint: string, 
         method: HttpMethod, 
