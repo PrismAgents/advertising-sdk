@@ -2,13 +2,13 @@ import config from "./config.json";
 
 
 /**
- * 
+ * Example response from enclave
  * {
     "status": "success",
-    "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjs2N2NhY2RkNGUzMzc4MzQ3NjgyNDUxNTA1MTkxM2MyM2VjMGVlNjk5YTM0ZWI0MDZmMjI0MDA5MmFhYzRhZCIsInRpbWVzdGFtcCI6IjIwMjUtMDUtMDZUMTI6NDI6MzcuMTU1MzYwKzAwOjAwIiwiZXhwIjoxNzQ2NTM1NjU3fQ.NHKUNJ0vTnuSpyU09X_cnwxMy5c6K3NvkHTN4ZjcU7U",
+    "jwt_token": "2NhY2RS...NvkHTN4ZjcU7U",
     "data": {
-        "campaignId": "0xcb67cacdd4e33783476824515051913c23ec0ee699a34eb406f2240092aac4ad",
-        "bannerIpfsUri": "https://aqua-holy-rhinoceros-561.mypinata.cloud/ipfs/bafybeihra7bkupgkuj7t6us2ocsn7ibttjzgdcnzxbnglnot4ks54jvf4y/Screenshot%202025-04-30%20at%2011.55.32%E2%80%AFAM.png",
+        "campaignId": "0xcb67cac...699a34eb406f2240092aac4ad",
+        "bannerIpfsUri": "https://myBanner..../ipfs/bafybeihrazgdcnzxbnglnot4ks54jvf4y.png",
         "url": "https://www.prismprotocol.xyz/",
         "campaignName": "TeddyBird"
     }
@@ -16,6 +16,7 @@ import config from "./config.json";
  */
 
 // Key to encrypt user's address for anonymous advertising
+// Only enclave access decryption key
 const SDK_KMS_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJxeNGaN0dT35BkiRTEp
 Gc01x12qPKW0h5f5EZs5UuW0d46GJe3Qusve34RaPbY2ZGBQ0ds0nghnZZwy5IBx
@@ -143,18 +144,18 @@ export class PrismClient {
      * @returns Click handling result
      */
     public static async clicks(
-        publisher: string, 
+        publisherAddress: string, 
         websiteUrl: string, 
         campaignId: string,
-        jwtToken: string,
+        jwt: string,
     ): Promise<PrismResponse> {
         const body: UserInteractionParams = {
-            publisherAddress: publisher,
+            publisherAddress: publisherAddress,
             websiteUrl: websiteUrl,
             campaignId: campaignId
         };
 
-        return this.fetchData("api", "/clicks", jwtToken, body);
+        return this.fetchData("api", "/clicks", jwt, body);
     }
 
     /**
@@ -165,18 +166,18 @@ export class PrismClient {
      * @returns Impression feedback result
      */
     public static async impressions(
-        publisher: string, 
+        publisherAddress: string, 
         websiteUrl: string, 
         campaignId: string,
-        jwtToken: string,
+        jwt: string,
     ): Promise<PrismResponse> {
         const body: UserInteractionParams = {
-            publisherAddress: publisher,
+            publisherAddress: publisherAddress,
             websiteUrl: websiteUrl,
             campaignId: campaignId
         };
 
-        return this.fetchData("api", "/impressions", jwtToken, body);
+        return this.fetchData("api", "/impressions", jwt, body);
     }
 
     /**
