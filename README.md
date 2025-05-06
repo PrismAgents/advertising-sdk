@@ -1,7 +1,7 @@
 # Prism SDK
 
 
-TypeScript client for Prism protocol onchain advertising. Prism Engine finds high-value users for your campaign using on-chain data. Compete in a real-time auction and display your ads to relevant users.
+TypeScript client for [Prism protocol](https://www.prismprotocol.xyz/) onchain advertising. Prism Engine finds high-value users for your campaign using on-chain data. Compete in a real-time auction and display your ads to relevant users.
 
 https://www.npmjs.com/package/prism-sdk
 
