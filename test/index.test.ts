@@ -20,7 +20,6 @@ const MOCK_JWT_TOKEN = "mock-jwt-token-for-testing";
 
 // --- JSDOM or manual mocks for browser APIs ---
 // If not using JSDOM test environment, manually mock window, atob, btoa, and crypto.subtle
-// For a simpler setup without full JSDOM, we can do this:
 global.atob = (str: string) => Buffer.from(str, 'base64').toString('binary');
 global.btoa = (str: string) => Buffer.from(str, 'binary').toString('base64');
 
