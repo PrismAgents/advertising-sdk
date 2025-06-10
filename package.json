@@ -7,7 +7,7 @@
     "dist",
     "src"
   ],
-  "version": "1.2.1",
+  "version": "1.2.0",
   "description": "Typescript client for Prism protocol onchain advertising",
   "scripts": {
     "build": "tsup",
