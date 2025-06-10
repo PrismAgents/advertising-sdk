@@ -31,23 +31,39 @@ This is the **Prism SDK** - a TypeScript client for onchain advertising that con
 - **Dual API Communication**: Communicates with both AWS Nitro Enclave (for auctions) and standard API (for tracking)
 - **Browser-First Design**: Uses Web Crypto API for address encryption, requires browser environment
 - **Zero-State Design**: All methods are static, no instance state management required
+- **Auto-Initialization**: `init()` and `autoAuction()` methods handle both connected and unconnected wallet states
+- **Enterprise Error Handling**: Comprehensive retry logic, timeouts, and callback-based error handling
 
 ### Key Components
 
-1. **Auction System** (`src/index.ts:113-137`)
+1. **Auto-Initialization System** (`src/index.ts:90-115`)
+   - `init()` method for immediate page load advertising
+   - `autoAuction()` method with unconnected wallet fallback
+   - Uses Ethereum zero address (`0x0000000000000000000000000000000000000000`) for unconnected users
+   - Callback-based success/error handling
+
+2. **Auction System** (`src/index.ts:239-275`)
    - Encrypts user addresses using RSA-OAEP with hardcoded public key
    - Calls Nitro Enclave for privacy-preserving auction resolution
    - Returns winning campaign data with JWT token for subsequent tracking
+   - Supports retry logic and timeout configuration
 
-2. **Tracking Methods** (`src/index.ts:146-181`)
+3. **Tracking Methods** (`src/index.ts:284-345`)
    - `clicks()` and `impressions()` methods for publisher revenue tracking
    - Both require JWT tokens from auction responses
    - Critical for publisher profit claiming
+   - Enhanced with error handling and retry capabilities
 
-3. **Address Encryption** (`src/index.ts:67-103`)
+4. **Address Encryption** (`src/index.ts:192-228`)
    - Uses Web Crypto API with RSA-OAEP + SHA-256
    - Hardcoded public key for consistent encryption across publishers
    - Browser-only - will not work in Node.js without polyfills
+
+5. **Error Handling & Resilience** (`src/index.ts:127-150`)
+   - Configurable retry logic with exponential backoff (default: 3 retries)
+   - Request timeout handling with AbortController (default: 10s)
+   - Success/error callback patterns for all async operations
+   - Comprehensive error types and messages
 
 ### Configuration
 
@@ -63,4 +79,38 @@ This is the **Prism SDK** - a TypeScript client for onchain advertising that con
 
 ### Testing Approach
 
-Tests extensively mock browser APIs (`window.crypto.subtle`, `atob`, `btoa`) since the SDK requires browser environment. The test suite validates the complete auction flow including address encryption and API communication.
+Tests extensively mock browser APIs (`window.crypto.subtle`, `atob`, `btoa`) since the SDK requires browser environment. The test suite validates:
+
+- Complete auction flow including address encryption and API communication
+- Auto-initialization with connected and unconnected wallet scenarios  
+- Error handling and retry mechanisms with exponential backoff
+- Timeout handling and AbortController functionality
+- Success/error callback execution
+- Mock isolation to prevent test interference
+
+### Common Development Patterns
+
+**Adding New Methods:**
+1. Add to `PrismClient` class with static method
+2. Include error handling with `try/catch` and `withRetry()`
+3. Support optional configuration via options parameter
+4. Add comprehensive tests with both success and error scenarios
+5. Update TypeScript interfaces for new options
+
+**Error Handling Pattern:**
+```typescript
+public static async newMethod(params..., options?: ConfigOptions) {
+    try {
+        const result = await this.withRetry(async () => {
+            return this.fetchData(source, endpoint, jwt, body, options);
+        }, options?.retries);
+        
+        options?.onSuccess?.(result);
+        return result;
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        options?.onError?.(err);
+        throw err;
+    }
+}
+```
