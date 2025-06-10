@@ -1,10 +1,13 @@
-import { PrismClient, PrismResponse } from "../src/index"; // Using import for Jest
+import { PrismClient, PrismResponse, PrismWinner } from "../src/index";
+import { vi, expect, it, describe, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 
 // Mock config.json used by fetchData in the SDK
-jest.mock('../src/config.json', () => ({
-    "prism-enclave-url": "http://mock-enclave-url.com",
-    "prism-api-url": "http://mock-api-url.com"
-}), { virtual: true });
+vi.mock('../src/config.json', () => ({
+    default: {
+        "prism-enclave-url": "http://mock-enclave-url.com",
+        "prism-api-url": "http://mock-api-url.com"
+    }
+}));
 
 // Configuration Constants
 const PUBLISHER_ADDRESS = "0xFa000000000000000000000000005F723DC";
@@ -21,8 +24,8 @@ global.atob = (str: string) => Buffer.from(str, 'base64').toString('binary');
 global.btoa = (str: string) => Buffer.from(str, 'binary').toString('base64');
 
 const mockSubtleCrypto = {
-    importKey: jest.fn().mockResolvedValue({} as CryptoKey), // Mock it to resolve to a dummy CryptoKey object
-    encrypt: jest.fn().mockImplementation(async (_algorithm: AlgorithmIdentifier, _key: CryptoKey, data: BufferSource) => {
+    importKey: vi.fn().mockResolvedValue({} as CryptoKey), // Mock it to resolve to a dummy CryptoKey object
+    encrypt: vi.fn().mockImplementation(async (_algorithm: AlgorithmIdentifier, _key: CryptoKey, data: BufferSource) => {
         const Suffix = "_by_mocked_subtle_encrypt";
         let dataView: ArrayBufferView;
         if (data instanceof ArrayBuffer) {
@@ -37,16 +40,16 @@ const mockSubtleCrypto = {
         return new TextEncoder().encode(encryptedString).buffer;
     }),
     // Add missing methods to satisfy TypeScript
-    decrypt: jest.fn(),
-    deriveBits: jest.fn(),
-    deriveKey: jest.fn(),
-    digest: jest.fn(),
-    exportKey: jest.fn(),
-    generateKey: jest.fn(),
-    sign: jest.fn(),
-    unwrapKey: jest.fn(),
-    verify: jest.fn(),
-    wrapKey: jest.fn()
+    decrypt: vi.fn(),
+    deriveBits: vi.fn(),
+    deriveKey: vi.fn(),
+    digest: vi.fn(),
+    exportKey: vi.fn(),
+    generateKey: vi.fn(),
+    sign: vi.fn(),
+    unwrapKey: vi.fn(),
+    verify: vi.fn(),
+    wrapKey: vi.fn()
 };
 
 // Ensure window is defined with crypto property
@@ -57,7 +60,7 @@ if (typeof global.window === 'undefined') {
 // Create and attach the crypto object to window
 (global as any).window.crypto = {
     subtle: mockSubtleCrypto,
-    getRandomValues: jest.fn((array: ArrayBufferView) => {
+    getRandomValues: vi.fn((array: ArrayBufferView) => {
         if (array && 'length' in array) {
             const view = new Uint8Array(array.buffer);
             for (let i = 0; i < view.length; i++) {
@@ -66,13 +69,13 @@ if (typeof global.window === 'undefined') {
         }
         return array;
     }),
-    randomUUID: jest.fn().mockReturnValue('mock-uuid') // Add missing property
+    randomUUID: vi.fn().mockReturnValue('mock-uuid') // Add missing property
 };
 // --- End of mocks ---
 
 describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs', () => {
     const originalFetch = global.fetch;
-    let fetchMock: jest.Mock;
+    let fetchMock: any;
     let originalWindow: Window & typeof globalThis;
     let originalAtob: typeof atob;
     let originalBtoa: typeof btoa;
@@ -91,7 +94,7 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
         (global as any).window = {
             crypto: {
                 subtle: mockSubtleCrypto,
-                getRandomValues: jest.fn((array) => {
+                getRandomValues: vi.fn((array) => {
                     if (array.length) {
                         for (let i = 0; i < array.length; i++) {
                             array[i] = Math.floor(Math.random() * 256);
@@ -99,7 +102,7 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
                     }
                     return array;
                 }),
-                randomUUID: jest.fn().mockReturnValue('mock-uuid-in-beforeall') 
+                randomUUID: vi.fn().mockReturnValue('mock-uuid-in-beforeall') 
             },
             // Add other window properties if needed by the SDK
         };
@@ -130,7 +133,7 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
             return new TextEncoder().encode(encryptedString).buffer;
         });
 
-        fetchMock = jest.fn(async (url: string | URL | Request, _options?: RequestInit): Promise<Response> => {
+        fetchMock = vi.fn(async (url: string | URL | Request, _options?: RequestInit): Promise<Response> => {
             // console.log(`Mock Fetch request to: ${url.toString()}`);
             // if (_options) {
             //     console.log(`Mock Request headers:`, _options.headers);
@@ -143,8 +146,8 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
             if (urlString.includes('/auction')) {
                 responseBody = {
                     status: "success",
-                    jwt_token: MOCK_JWT_TOKEN,
                     data: {
+                        jwt_token: MOCK_JWT_TOKEN,
                         campaignId: CAMPAIGN_ID,
                         bannerIpfsUri: "https://example.com/banner.png",
                         url: "https://example.com/campaign-target",
@@ -153,8 +156,10 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
                 };
             } else if (urlString.includes('/click') || urlString.includes('/impressions')) {
                 responseBody = {
-                    status: "success",
-                    message: `${urlString.includes('/click') ? 'Click' : 'Impression'} recorded successfully.`
+                    data: {
+                        status: "success",
+                        message: `${urlString.includes('/click') ? 'Click' : 'Impression'} recorded successfully.`
+                    }
                 };
             } else {
                 responseBody = {
@@ -173,7 +178,7 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
             // Override the json method for this response
             Object.defineProperty(mockResponse, 'json', {
                 writable: true,
-                value: jest.fn().mockResolvedValue(responseBody)
+                value: vi.fn().mockResolvedValue(responseBody)
             });
 
             return Promise.resolve(mockResponse);
@@ -183,11 +188,11 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
 
     afterEach(() => {
         global.fetch = originalFetch; 
-        jest.clearAllMocks(); 
+        vi.clearAllMocks(); 
     });
 
-    test('auction should call encryptAddress (which uses mocked window.crypto.subtle) and return campaign data', async () => {
-        const auctionResult: PrismResponse = await PrismClient.auction(
+    it('auction should call encryptAddress (which uses mocked window.crypto.subtle) and return campaign data', async () => {
+        const auctionResult: PrismWinner = await PrismClient.auction(
             PUBLISHER_ADDRESS,
             PUBLISHER_DOMAIN,
             USER_WALLET
@@ -202,12 +207,11 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
                 body: expect.stringContaining(Buffer.from(`encrypted-${USER_WALLET}_by_mocked_subtle_encrypt`).toString('base64')) // Ensure we check the base64 encoded body part
             })
         );
-        expect(auctionResult.status).toBe(200);
-        expect((auctionResult.data as any).jwt_token).toBe(MOCK_JWT_TOKEN);
-        expect((auctionResult.data as any).data.campaignId).toBe(CAMPAIGN_ID);
+        expect(auctionResult.jwt_token).toBe(MOCK_JWT_TOKEN);
+        expect(auctionResult.campaignId).toBe(CAMPAIGN_ID);
     });
 
-    test('clicks should succeed with a valid JWT token', async () => {
+    it('clicks should succeed with a valid JWT token', async () => {
         const clickResult: PrismResponse = await PrismClient.clicks(
             PUBLISHER_ADDRESS,
             WEBSITE_URL,
@@ -219,7 +223,7 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
         expect((clickResult.data as any).status).toBe("success");
     });
 
-    test('impressions should succeed with a valid JWT token', async () => {
+    it('impressions should succeed with a valid JWT token', async () => {
         const impressionResult: PrismResponse = await PrismClient.impressions(
             PUBLISHER_ADDRESS,
             WEBSITE_URL,
@@ -231,7 +235,7 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
         expect((impressionResult.data as any).status).toBe("success");
     });
 
-    test('encryptAddress should use mocked window.crypto.subtle and btoa', async () => {
+    it('encryptAddress should use mocked window.crypto.subtle and btoa', async () => {
         const encryptedAddress = await PrismClient.encryptAddress(USER_WALLET);
         
         expect(mockSubtleCrypto.importKey).toHaveBeenCalledTimes(1);
