@@ -55,8 +55,135 @@ export interface UserInteractionParams {
  */
 type ApiSource = "enclave" | "api";
 
+/**
+ * Configuration options for requests
+ */
+export interface PrismRequestOptions {
+    retries?: number;
+    timeout?: number;
+    onError?: (error: Error) => void;
+}
+
+/**
+ * Configuration options for auction methods
+ */
+export interface PrismAuctionOptions extends PrismRequestOptions {
+    onSuccess?: (winner: PrismWinner) => void;
+}
+
+/**
+ * Configuration options for tracking methods
+ */
+export interface PrismTrackingOptions extends PrismRequestOptions {
+    onSuccess?: (response: PrismResponse) => void;
+}
+
 
 export class PrismClient {
+    
+    /**
+     * Fallback wallet address for unconnected users
+     * Uses Ethereum zero address which backend recognizes as unconnected state
+     */
+    private static readonly UNCONNECTED_WALLET_ADDRESS = "0x0000000000000000000000000000000000000000";
+    
+    /**
+     * Default configuration values
+     */
+    private static readonly DEFAULT_CONFIG = {
+        retries: 3,
+        timeout: 10000, // 10 seconds
+    };
+
+    /**
+     * Automatically triggers auction on page load with fallback for unconnected users
+     * @param publisherAddress Publisher's Ethereum address
+     * @param publisherDomain Publisher's domain
+     * @param connectedWallet Optional connected wallet address, falls back to unconnected address
+     * @param options Configuration options including error handling
+     * @returns Promise<PrismWinner> Auction result
+     */
+    public static async autoAuction(
+        publisherAddress: string,
+        publisherDomain: string,
+        connectedWallet?: string,
+        options?: PrismAuctionOptions
+    ): Promise<PrismWinner> {
+        try {
+            const walletToUse = connectedWallet || this.UNCONNECTED_WALLET_ADDRESS;
+            // Don't pass callbacks to avoid double-calling
+            const auctionOptions = options ? { ...options, onSuccess: undefined, onError: undefined } : undefined;
+            const result = await this.auction(publisherAddress, publisherDomain, walletToUse, auctionOptions);
+            options?.onSuccess?.(result);
+            return result;
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            options?.onError?.(err);
+            throw err;
+        }
+    }
+
+    /**
+     * Retry helper for API calls
+     */
+    private static async withRetry<T>(
+        operation: () => Promise<T>,
+        retries: number = this.DEFAULT_CONFIG.retries
+    ): Promise<T> {
+        let lastError: Error;
+        
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                return await operation();
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+                
+                if (attempt === retries) {
+                    throw lastError;
+                }
+                
+                // Exponential backoff: 1s, 2s, 4s
+                const delay = Math.pow(2, attempt - 1) * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+        
+        throw lastError!;
+    }
+
+    /**
+     * Initialize Prism ads automatically when page loads
+     * This function should be called immediately when the SDK is loaded
+     * @param publisherAddress Publisher's Ethereum address
+     * @param publisherDomain Publisher's domain
+     * @param options Configuration options
+     */
+    public static async init(
+        publisherAddress: string,
+        publisherDomain: string,
+        options: {
+            connectedWallet?: string;
+            autoTrigger?: boolean;
+            onSuccess?: (winner: PrismWinner) => void;
+            onError?: (error: Error) => void;
+        } = {}
+    ): Promise<PrismWinner | null> {
+        const { connectedWallet, autoTrigger = true, onSuccess, onError } = options;
+        
+        if (!autoTrigger) {
+            return null;
+        }
+
+        try {
+            const winner = await this.autoAuction(publisherAddress, publisherDomain, connectedWallet);
+            onSuccess?.(winner);
+            return winner;
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            onError?.(err);
+            return null;
+        }
+    }
 
     /**
      * Encrypts an Ethereum address using the SDK's public key
@@ -108,39 +235,54 @@ export class PrismClient {
      * @param publisher Publisher's Ethereum address
      * @param publisherDomain Publisher's domain
      * @param wallet User's Ethereum address
+     * @param options Configuration options including error handling
      * @returns Auction result
      */
     public static async auction(
         publisher: string, 
         publisherDomain: string, 
-        wallet: string
+        wallet: string,
+        options?: PrismAuctionOptions
     ): Promise<PrismWinner> {
-        const encryptedAddress = await this.encryptAddress(wallet);
-        const response : any = await this.fetchData(
-            "enclave", 
-            "/auction",
-            null,
-            {   
-                publisher_address: publisher, 
-                user_address: encryptedAddress,
-                publisher_domain: publisherDomain
-            }
-        );
-        return {
-            bannerIpfsUri: response.data.bannerIpfsUri,
-            campaignId: response.data.campaignId,
-            campaignName: response.data.campaignName,
-            jwt_token: response.data.jwt_token,
-            url: response.data.url
+        try {
+            const result = await this.withRetry(async () => {
+                const encryptedAddress = await this.encryptAddress(wallet);
+                const response : any = await this.fetchData(
+                    "enclave", 
+                    "/auction",
+                    null,
+                    {   
+                        publisher_address: publisher, 
+                        user_address: encryptedAddress,
+                        publisher_domain: publisherDomain
+                    },
+                    options
+                );
+                return {
+                    bannerIpfsUri: response.data.bannerIpfsUri,
+                    campaignId: response.data.campaignId,
+                    campaignName: response.data.campaignName,
+                    jwt_token: response.data.jwt_token,
+                    url: response.data.url
+                };
+            }, options?.retries);
+            
+            options?.onSuccess?.(result);
+            return result;
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            options?.onError?.(err);
+            throw err;
         }
-
     }
 
     /**
      * Handles user click event
-     * @param publisher Publisher's Ethereum address
+     * @param publisherAddress Publisher's Ethereum address
      * @param websiteUrl Website URL where click occurred
      * @param campaignId Campaign ID that was clicked
+     * @param jwt JWT token from auction
+     * @param options Configuration options including error handling
      * @returns Click handling result
      */
     public static async clicks(
@@ -148,21 +290,34 @@ export class PrismClient {
         websiteUrl: string, 
         campaignId: string,
         jwt: string,
+        options?: PrismTrackingOptions
     ): Promise<PrismResponse> {
-        const body: UserInteractionParams = {
-            publisherAddress: publisherAddress,
-            websiteUrl: websiteUrl,
-            campaignId: campaignId
-        };
-
-        return this.fetchData("api", "/clicks", jwt, body);
+        try {
+            const result = await this.withRetry(async () => {
+                const body: UserInteractionParams = {
+                    publisherAddress: publisherAddress,
+                    websiteUrl: websiteUrl,
+                    campaignId: campaignId
+                };
+                return this.fetchData("api", "/clicks", jwt, body, options);
+            }, options?.retries);
+            
+            options?.onSuccess?.(result);
+            return result;
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            options?.onError?.(err);
+            throw err;
+        }
     }
 
     /**
      * Sends impression feedback
-     * @param publisher Publisher's Ethereum address
+     * @param publisherAddress Publisher's Ethereum address
      * @param websiteUrl Website URL where impression occurred
      * @param campaignId Campaign ID that was viewed
+     * @param jwt JWT token from auction
+     * @param options Configuration options including error handling
      * @returns Impression feedback result
      */
     public static async impressions(
@@ -170,37 +325,55 @@ export class PrismClient {
         websiteUrl: string, 
         campaignId: string,
         jwt: string,
+        options?: PrismTrackingOptions
     ): Promise<PrismResponse> {
-        const body: UserInteractionParams = {
-            publisherAddress: publisherAddress,
-            websiteUrl: websiteUrl,
-            campaignId: campaignId
-        };
-
-        return this.fetchData("api", "/impressions", jwt, body);
+        try {
+            const result = await this.withRetry(async () => {
+                const body: UserInteractionParams = {
+                    publisherAddress: publisherAddress,
+                    websiteUrl: websiteUrl,
+                    campaignId: campaignId
+                };
+                return this.fetchData("api", "/impressions", jwt, body, options);
+            }, options?.retries);
+            
+            options?.onSuccess?.(result);
+            return result;
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            options?.onError?.(err);
+            throw err;
+        }
     }
 
     /**
-     * Fetch data from Prism API endpoints
+     * Fetch data from Prism API endpoints with timeout support
      * @param source API source ("enclave" or "api")
      * @param endpoint API endpoint
-     * @param method HTTP method
+     * @param jwtToken JWT token for authentication
      * @param body Request body
+     * @param options Request options including timeout
      * @returns API response
      */
     private static async fetchData(
         source: ApiSource, 
         endpoint: string, 
         jwtToken: string | null,
-        body: unknown
+        body: unknown,
+        options?: PrismRequestOptions
     ): Promise<PrismResponse> {
         const baseUrl = source === "enclave" 
             ? config["prism-enclave-url"] 
             : config["prism-api-url"];
         
         const url = `${baseUrl}${endpoint}`;
+        const timeout = options?.timeout || this.DEFAULT_CONFIG.timeout;
         
         try {
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -208,7 +381,10 @@ export class PrismClient {
                     ...(jwtToken ? {'Authorization': `${jwtToken}`} : {}),
                 },
                 body: JSON.stringify(body),
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             
             if (!response.ok) {
                 const errorMessage = await response.text();
@@ -225,6 +401,15 @@ export class PrismClient {
             };
         } catch (error) {
             console.error(`Error with fetch operation:`, url, error);
+            
+            // Handle timeout specifically
+            if (error instanceof Error && error.name === 'AbortError') {
+                return { 
+                    status: 408, 
+                    message: `Request timeout after ${timeout}ms`
+                };
+            }
+            
             return { 
                 status: 500, 
                 message: error instanceof Error ? error.message : String(error)

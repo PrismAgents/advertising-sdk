@@ -14,6 +14,7 @@ const PUBLISHER_ADDRESS = "0xFa000000000000000000000000005F723DC";
 const PUBLISHER_DOMAIN = "example.com";
 const WEBSITE_URL = "https://example.com/article";
 const USER_WALLET = "0xFa21000000000000000000000001BD35F723DC";
+const UNCONNECTED_WALLET = "0x0000000000000000000000000000000000000000";
 const CAMPAIGN_ID = "campaign-123";
 const MOCK_JWT_TOKEN = "mock-jwt-token-for-testing";
 
@@ -223,6 +224,22 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
         expect((clickResult.data as any).status).toBe("success");
     });
 
+    it('clicks should call onSuccess callback when provided', async () => {
+        const onSuccess = vi.fn();
+        const onError = vi.fn();
+
+        await PrismClient.clicks(
+            PUBLISHER_ADDRESS,
+            WEBSITE_URL,
+            CAMPAIGN_ID,
+            MOCK_JWT_TOKEN,
+            { onSuccess, onError }
+        );
+
+        expect(onSuccess).toHaveBeenCalledTimes(1);
+        expect(onError).not.toHaveBeenCalled();
+    });
+
     it('impressions should succeed with a valid JWT token', async () => {
         const impressionResult: PrismResponse = await PrismClient.impressions(
             PUBLISHER_ADDRESS,
@@ -233,6 +250,22 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(impressionResult.status).toBe(200);
         expect((impressionResult.data as any).status).toBe("success");
+    });
+
+    it('impressions should call onSuccess callback when provided', async () => {
+        const onSuccess = vi.fn();
+        const onError = vi.fn();
+
+        await PrismClient.impressions(
+            PUBLISHER_ADDRESS,
+            WEBSITE_URL,
+            CAMPAIGN_ID,
+            MOCK_JWT_TOKEN,
+            { onSuccess, onError }
+        );
+
+        expect(onSuccess).toHaveBeenCalledTimes(1);
+        expect(onError).not.toHaveBeenCalled();
     });
 
     it('encryptAddress should use mocked window.crypto.subtle and btoa', async () => {
@@ -253,4 +286,186 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
         const finalBtoaOutput = btoa(String.fromCharCode(...new Uint8Array(intermediateEncryptedBytes.buffer)));
         expect(encryptedAddress).toBe(finalBtoaOutput);
     });
+
+    it('autoAuction should use connected wallet when provided', async () => {
+        const auctionResult: PrismWinner = await PrismClient.autoAuction(
+            PUBLISHER_ADDRESS,
+            PUBLISHER_DOMAIN,
+            USER_WALLET
+        );
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledWith(
+            expect.stringContaining('/auction'), 
+            expect.objectContaining({
+                body: expect.stringContaining(Buffer.from(`encrypted-${USER_WALLET}_by_mocked_subtle_encrypt`).toString('base64'))
+            })
+        );
+        expect(auctionResult.jwt_token).toBe(MOCK_JWT_TOKEN);
+        expect(auctionResult.campaignId).toBe(CAMPAIGN_ID);
+    });
+
+    it('autoAuction should use unconnected wallet address when no wallet provided', async () => {
+        const auctionResult: PrismWinner = await PrismClient.autoAuction(
+            PUBLISHER_ADDRESS,
+            PUBLISHER_DOMAIN
+        );
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledWith(
+            expect.stringContaining('/auction'), 
+            expect.objectContaining({
+                body: expect.stringContaining(Buffer.from(`encrypted-${UNCONNECTED_WALLET}_by_mocked_subtle_encrypt`).toString('base64'))
+            })
+        );
+        expect(auctionResult.jwt_token).toBe(MOCK_JWT_TOKEN);
+        expect(auctionResult.campaignId).toBe(CAMPAIGN_ID);
+    });
+
+    it('init should trigger auto auction by default and call success callback', async () => {
+        const onSuccess = vi.fn();
+        const onError = vi.fn();
+
+        const result = await PrismClient.init(
+            PUBLISHER_ADDRESS,
+            PUBLISHER_DOMAIN,
+            {
+                connectedWallet: USER_WALLET,
+                onSuccess,
+                onError
+            }
+        );
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(onSuccess).toHaveBeenCalledTimes(1);
+        expect(onError).not.toHaveBeenCalled();
+        expect(result).toBeTruthy();
+        expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
+    });
+
+    it('init should not trigger auction when autoTrigger is false', async () => {
+        const result = await PrismClient.init(
+            PUBLISHER_ADDRESS,
+            PUBLISHER_DOMAIN,
+            {
+                autoTrigger: false
+            }
+        );
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(result).toBeNull();
+    });
+
+    it('init should call error callback when auction fails', async () => {
+        // Reset the mock to ensure clean state
+        fetchMock.mockReset();
+        fetchMock.mockRejectedValue(new Error('Network error'));
+        
+        const onSuccess = vi.fn();
+        const onError = vi.fn();
+
+        const result = await PrismClient.init(
+            PUBLISHER_ADDRESS,
+            PUBLISHER_DOMAIN,
+            {
+                onSuccess,
+                onError
+            }
+        );
+
+        expect(onSuccess).not.toHaveBeenCalled();
+        expect(onError).toHaveBeenCalledTimes(1);
+        expect(onError).toHaveBeenCalledWith(expect.any(Error));
+        expect(result).toBeNull();
+    });
+
+    it('auction should call onSuccess callback when provided', async () => {
+        const onSuccess = vi.fn();
+        const onError = vi.fn();
+
+        await PrismClient.auction(
+            PUBLISHER_ADDRESS,
+            PUBLISHER_DOMAIN,
+            USER_WALLET,
+            { onSuccess, onError }
+        );
+
+        expect(onSuccess).toHaveBeenCalledTimes(1);
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it('autoAuction should call onSuccess callback when provided', async () => {
+        const onSuccess = vi.fn();
+        const onError = vi.fn();
+
+        await PrismClient.autoAuction(
+            PUBLISHER_ADDRESS,
+            PUBLISHER_DOMAIN,
+            USER_WALLET,
+            { onSuccess, onError }
+        );
+
+        expect(onSuccess).toHaveBeenCalledTimes(1);
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it('should retry failed requests with exponential backoff', async () => {
+        // Reset and setup mock sequence
+        fetchMock.mockReset();
+        fetchMock
+            .mockRejectedValueOnce(new Error('Network error'))
+            .mockRejectedValueOnce(new Error('Network error'))
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve({
+                    data: {
+                        jwt_token: MOCK_JWT_TOKEN,
+                        campaignId: CAMPAIGN_ID,
+                        bannerIpfsUri: "https://example.com/banner.png",
+                        url: "https://example.com/campaign-target",
+                        campaignName: "Test Campaign"
+                    }
+                })
+            } as Response);
+
+        const result = await PrismClient.autoAuction(
+            PUBLISHER_ADDRESS,
+            PUBLISHER_DOMAIN,
+            USER_WALLET,
+            { retries: 3 }
+        );
+
+        expect(fetchMock).toHaveBeenCalledTimes(3); // Failed twice, succeeded on third try
+        expect(result.jwt_token).toBe(MOCK_JWT_TOKEN);
+    });
+
+    it('should handle timeout errors correctly', async () => {
+        // Reset and setup timeout mock
+        fetchMock.mockReset();
+        fetchMock.mockImplementation(() => {
+            return new Promise((_, reject) => {
+                setTimeout(() => {
+                    const abortError = new Error('AbortError');
+                    abortError.name = 'AbortError';
+                    reject(abortError);
+                }, 150); // Reject after 150ms to simulate timeout
+            });
+        });
+
+        const onError = vi.fn();
+
+        try {
+            await PrismClient.autoAuction(
+                PUBLISHER_ADDRESS,
+                PUBLISHER_DOMAIN,
+                USER_WALLET,
+                { timeout: 100, retries: 1, onError } // Very short timeout
+            );
+        } catch (error) {
+            expect(error).toBeDefined();
+        }
+
+        expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    }, 10000); // Increase test timeout
 });
