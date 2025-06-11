@@ -54,7 +54,7 @@ PrismClient.init(
     },
     onError: (error) => {
       console.log('Failed to load ads:', error.message);
-      // Optionally show fallback content
+      // Optionally show fallback content 
     }
   }
 );
