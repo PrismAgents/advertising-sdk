@@ -103,8 +103,8 @@ export class PrismClient {
      */
     private static readonly DEFAULT_CONFIG = {
         retries: 3,
-        timeout: 10000, // 10 seconds
-        walletDetectionTimeout: 1000, // 3 seconds to wait for wallet
+        timeout: 10000, 
+        walletDetectionTimeout: 1000,
         walletDetectionInterval: 100, // Check every 100ms
     };
 
