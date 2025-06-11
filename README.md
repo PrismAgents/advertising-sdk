@@ -162,11 +162,16 @@ Automatically initializes ads when your page loads. Handles both connected and u
 **Parameters:**
 - `publisherAddress` (string): Your whitelisted publisher Ethereum address
 - `publisherDomain` (string): Your domain (e.g., "yourdomain.com")
-- `options` (object):
+- `options` (PrismInitOptions): Configuration object. See above for all supported fields.
   - `connectedWallet?` (string): User's wallet address (optional)
   - `autoTrigger?` (boolean): Whether to automatically trigger auction (default: true)
+  - `walletDetectionTimeout?` (number): Max time (ms) to wait for wallet connection
+  - `walletDetectionInterval?` (number): Interval (ms) to check for wallet
+  - `getWalletAddress?` (function): Custom async wallet getter
   - `onSuccess?` (function): Callback when auction succeeds
   - `onError?` (function): Callback when auction fails
+  - `retries?` (number): Retry attempts
+  - `timeout?` (number): Request timeout (ms)
 
 ### PrismClient.autoAuction()
 
@@ -400,8 +405,46 @@ function useAdTracking(winner: PrismWinner) {
 }
 ```
 
+---
 
+> **Why use wallet detection options?**
+>
+> When a user visits your site, their wallet address may not be available immediately—even if their wallet is already connected. It can take a few hundred milliseconds for wallet providers (like MetaMask) to inject the address into the page. The `walletDetectionTimeout`, `walletDetectionInterval`, and `getWalletAddress` options allow the SDK to wait a short period for the wallet address to become available before sending the auction request. This ensures you get the user's real address if possible, maximizing campaign targeting and revenue, while still falling back to the unconnected state if no wallet is detected in time.
 
+### Advanced Wallet Detection Use Case
+
+You can use the new `walletDetectionTimeout`, `walletDetectionInterval`, and `getWalletAddress` options to customize how the SDK waits for a wallet connection before running the auction. This is useful for dApps that want to give users a chance to connect their wallet before showing ads, or want to integrate with custom wallet providers.
+
+**Example: Wait up to 3 seconds for a wallet connection, checking every 200ms**
+
+```typescript
+PrismClient.init(
+  "0xYourPublisherAddress",
+  "yourdomain.com",
+  {
+    // Custom async wallet getter (e.g., from MetaMask or other provider)
+    getWalletAddress: async () => {
+      if (window.ethereum) {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        return accounts[0];
+      }
+      return undefined;
+    },
+    walletDetectionTimeout: 3000, // Wait up to 3 seconds for wallet connection
+    walletDetectionInterval: 200, // Check every 200ms
+    onSuccess: (winner) => {
+      // Show ad, track impression, etc.
+    },
+    onError: (err) => {
+      // Handle error or fallback
+    }
+  }
+);
+```
+
+If no wallet is detected within the timeout, the SDK will proceed using the fallback (unconnected) address, ensuring ads are still shown.
+
+---
 
 ## Publisher Dashboard
 
