@@ -72,6 +72,17 @@ export interface PrismAuctionOptions extends PrismRequestOptions {
 }
 
 /**
+ * Configuration options for init method
+ */
+export interface PrismInitOptions extends PrismAuctionOptions {
+    connectedWallet?: string;
+    autoTrigger?: boolean;
+    walletDetectionTimeout?: number;
+    walletDetectionInterval?: number;
+    getWalletAddress?: () => string | undefined | Promise<string | undefined>;
+}
+
+/**
  * Configuration options for tracking methods
  */
 export interface PrismTrackingOptions extends PrismRequestOptions {
@@ -93,6 +104,8 @@ export class PrismClient {
     private static readonly DEFAULT_CONFIG = {
         retries: 3,
         timeout: 10000, // 10 seconds
+        walletDetectionTimeout: 1000, // 3 seconds to wait for wallet
+        walletDetectionInterval: 100, // Check every 100ms
     };
 
     /**
@@ -152,30 +165,81 @@ export class PrismClient {
     }
 
     /**
-     * Initialize Prism ads automatically when page loads
+     * Waits for wallet address to be available with configurable timeout
+     * @param getWalletAddress Function to get wallet address
+     * @param timeout Maximum time to wait in milliseconds
+     * @param interval Check interval in milliseconds
+     * @returns Promise<string | undefined> Wallet address or undefined if timeout
+     */
+    private static async waitForWallet(
+        getWalletAddress: () => string | undefined | Promise<string | undefined>,
+        timeout: number = this.DEFAULT_CONFIG.walletDetectionTimeout,
+        interval: number = this.DEFAULT_CONFIG.walletDetectionInterval
+    ): Promise<string | undefined> {
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < timeout) {
+            try {
+                const address = await getWalletAddress();
+                if (address && address !== this.UNCONNECTED_WALLET_ADDRESS) {
+                    return address;
+                }
+            } catch (error) {
+                // Ignore errors during wallet detection
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, interval));
+        }
+        
+        return undefined;
+    }
+
+    /**
+     * Initialize Prism ads automatically when page loads with smart wallet detection
      * This function should be called immediately when the SDK is loaded
+     * Waits for wallet connection before proceeding, with fallback to unconnected state
      * @param publisherAddress Publisher's Ethereum address
      * @param publisherDomain Publisher's domain
-     * @param options Configuration options
+     * @param options Configuration options including wallet detection settings
      */
     public static async init(
         publisherAddress: string,
         publisherDomain: string,
-        options: {
-            connectedWallet?: string;
-            autoTrigger?: boolean;
-            onSuccess?: (winner: PrismWinner) => void;
-            onError?: (error: Error) => void;
-        } = {}
+        options: PrismInitOptions = {}
     ): Promise<PrismWinner | null> {
-        const { connectedWallet, autoTrigger = true, onSuccess, onError } = options;
+        const { 
+            connectedWallet, 
+            autoTrigger = true, 
+            walletDetectionTimeout = this.DEFAULT_CONFIG.walletDetectionTimeout,
+            walletDetectionInterval = this.DEFAULT_CONFIG.walletDetectionInterval,
+            getWalletAddress,
+            onSuccess, 
+            onError 
+        } = options;
         
         if (!autoTrigger) {
             return null;
         }
 
         try {
-            const winner = await this.autoAuction(publisherAddress, publisherDomain, connectedWallet);
+            let walletToUse = connectedWallet;
+            
+            // If no explicit wallet provided but we have a getter function, wait for wallet
+            if (!walletToUse && getWalletAddress) {
+                walletToUse = await this.waitForWallet(
+                    getWalletAddress, 
+                    walletDetectionTimeout, 
+                    walletDetectionInterval
+                );
+            }
+
+            const auctionOptions = {
+                ...options,
+                onSuccess: undefined, // Avoid double-calling callbacks
+                onError: undefined
+            };
+
+            const winner = await this.autoAuction(publisherAddress, publisherDomain, walletToUse, auctionOptions);
             onSuccess?.(winner);
             return winner;
         } catch (error) {

@@ -467,4 +467,228 @@ describe('PrismClient Integration-like Tests with Mocked Fetch and Browser APIs'
 
         expect(onError).toHaveBeenCalledWith(expect.any(Error));
     }, 10000); // Increase test timeout
+
+    // New wallet detection tests
+    describe('Wallet Detection Tests', () => {
+        it('init should use getWalletAddress when wallet is immediately available', async () => {
+            const getWalletAddress = vi.fn().mockReturnValue(USER_WALLET);
+            const onSuccess = vi.fn();
+
+            const result = await PrismClient.init(
+                PUBLISHER_ADDRESS,
+                PUBLISHER_DOMAIN,
+                {
+                    getWalletAddress,
+                    onSuccess
+                }
+            );
+
+            expect(getWalletAddress).toHaveBeenCalled();
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(fetchMock).toHaveBeenCalledWith(
+                expect.stringContaining('/auction'),
+                expect.objectContaining({
+                    body: expect.stringContaining(Buffer.from(`encrypted-${USER_WALLET}_by_mocked_subtle_encrypt`).toString('base64'))
+                })
+            );
+            expect(onSuccess).toHaveBeenCalledTimes(1);
+            expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
+        });
+
+        it('init should wait for wallet address and use it when it becomes available', async () => {
+            let callCount = 0;
+            const getWalletAddress = vi.fn().mockImplementation(() => {
+                callCount++;
+                // Return wallet on third call to simulate delayed connection
+                return callCount >= 3 ? USER_WALLET : undefined;
+            });
+            const onSuccess = vi.fn();
+
+            const result = await PrismClient.init(
+                PUBLISHER_ADDRESS,
+                PUBLISHER_DOMAIN,
+                {
+                    getWalletAddress,
+                    walletDetectionTimeout: 1000,
+                    walletDetectionInterval: 50,
+                    onSuccess
+                }
+            );
+
+            expect(getWalletAddress).toHaveBeenCalledTimes(3);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(fetchMock).toHaveBeenCalledWith(
+                expect.stringContaining('/auction'),
+                expect.objectContaining({
+                    body: expect.stringContaining(Buffer.from(`encrypted-${USER_WALLET}_by_mocked_subtle_encrypt`).toString('base64'))
+                })
+            );
+            expect(onSuccess).toHaveBeenCalledTimes(1);
+            expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
+        });
+
+        it('init should fallback to unconnected state when wallet detection times out', async () => {
+            const getWalletAddress = vi.fn().mockReturnValue(undefined);
+            const onSuccess = vi.fn();
+
+            const result = await PrismClient.init(
+                PUBLISHER_ADDRESS,
+                PUBLISHER_DOMAIN,
+                {
+                    getWalletAddress,
+                    walletDetectionTimeout: 200,
+                    walletDetectionInterval: 50,
+                    onSuccess
+                }
+            );
+
+            expect(getWalletAddress).toHaveBeenCalledTimes(4); // 200ms timeout / 50ms interval = 4 calls
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(fetchMock).toHaveBeenCalledWith(
+                expect.stringContaining('/auction'),
+                expect.objectContaining({
+                    body: expect.stringContaining(Buffer.from(`encrypted-${UNCONNECTED_WALLET}_by_mocked_subtle_encrypt`).toString('base64'))
+                })
+            );
+            expect(onSuccess).toHaveBeenCalledTimes(1);
+            expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
+        });
+
+        it('init should ignore zero address from getWalletAddress and wait for real address', async () => {
+            let callCount = 0;
+            const getWalletAddress = vi.fn().mockImplementation(() => {
+                callCount++;
+                if (callCount === 1) return UNCONNECTED_WALLET; // Zero address first
+                if (callCount >= 3) return USER_WALLET; // Real address after a few calls
+                return undefined;
+            });
+            const onSuccess = vi.fn();
+
+            const result = await PrismClient.init(
+                PUBLISHER_ADDRESS,
+                PUBLISHER_DOMAIN,
+                {
+                    getWalletAddress,
+                    walletDetectionTimeout: 500,
+                    walletDetectionInterval: 50,
+                    onSuccess
+                }
+            );
+
+            expect(getWalletAddress).toHaveBeenCalledTimes(3);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(fetchMock).toHaveBeenCalledWith(
+                expect.stringContaining('/auction'),
+                expect.objectContaining({
+                    body: expect.stringContaining(Buffer.from(`encrypted-${USER_WALLET}_by_mocked_subtle_encrypt`).toString('base64'))
+                })
+            );
+            expect(onSuccess).toHaveBeenCalledTimes(1);
+            expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
+        });
+
+        it('init should handle errors from getWalletAddress gracefully', async () => {
+            let callCount = 0;
+            const getWalletAddress = vi.fn().mockImplementation(() => {
+                callCount++;
+                if (callCount <= 2) throw new Error('Wallet not ready');
+                return USER_WALLET;
+            });
+            const onSuccess = vi.fn();
+
+            const result = await PrismClient.init(
+                PUBLISHER_ADDRESS,
+                PUBLISHER_DOMAIN,
+                {
+                    getWalletAddress,
+                    walletDetectionTimeout: 500,
+                    walletDetectionInterval: 50,
+                    onSuccess
+                }
+            );
+
+            expect(getWalletAddress).toHaveBeenCalledTimes(3);
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(fetchMock).toHaveBeenCalledWith(
+                expect.stringContaining('/auction'),
+                expect.objectContaining({
+                    body: expect.stringContaining(Buffer.from(`encrypted-${USER_WALLET}_by_mocked_subtle_encrypt`).toString('base64'))
+                })
+            );
+            expect(onSuccess).toHaveBeenCalledTimes(1);
+            expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
+        });
+
+        it('init should use connectedWallet parameter over getWalletAddress', async () => {
+            const getWalletAddress = vi.fn().mockReturnValue('0x9999999999999999999999999999999999999999');
+            const onSuccess = vi.fn();
+
+            const result = await PrismClient.init(
+                PUBLISHER_ADDRESS,
+                PUBLISHER_DOMAIN,
+                {
+                    connectedWallet: USER_WALLET, // This should take precedence
+                    getWalletAddress,
+                    onSuccess
+                }
+            );
+
+            expect(getWalletAddress).not.toHaveBeenCalled(); // Should not be called when connectedWallet is provided
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(fetchMock).toHaveBeenCalledWith(
+                expect.stringContaining('/auction'),
+                expect.objectContaining({
+                    body: expect.stringContaining(Buffer.from(`encrypted-${USER_WALLET}_by_mocked_subtle_encrypt`).toString('base64'))
+                })
+            );
+            expect(onSuccess).toHaveBeenCalledTimes(1);
+            expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
+        });
+
+        it('init should work with async getWalletAddress', async () => {
+            const getWalletAddress = vi.fn().mockImplementation(async () => {
+                await new Promise(resolve => setTimeout(resolve, 100)); // Simulate async delay
+                return USER_WALLET;
+            });
+            const onSuccess = vi.fn();
+
+            const result = await PrismClient.init(
+                PUBLISHER_ADDRESS,
+                PUBLISHER_DOMAIN,
+                {
+                    getWalletAddress,
+                    walletDetectionTimeout: 500,
+                    onSuccess
+                }
+            );
+
+            expect(getWalletAddress).toHaveBeenCalled();
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+            expect(fetchMock).toHaveBeenCalledWith(
+                expect.stringContaining('/auction'),
+                expect.objectContaining({
+                    body: expect.stringContaining(Buffer.from(`encrypted-${USER_WALLET}_by_mocked_subtle_encrypt`).toString('base64'))
+                })
+            );
+            expect(onSuccess).toHaveBeenCalledTimes(1);
+            expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
+        });
+
+        it('init should not call getWalletAddress when autoTrigger is false', async () => {
+            const getWalletAddress = vi.fn().mockReturnValue(USER_WALLET);
+
+            const result = await PrismClient.init(
+                PUBLISHER_ADDRESS,
+                PUBLISHER_DOMAIN,
+                {
+                    getWalletAddress,
+                    autoTrigger: false
+                }
+            );
+
+            expect(getWalletAddress).not.toHaveBeenCalled();
+            expect(fetchMock).not.toHaveBeenCalled();
+            expect(result).toBeNull();
+        });
+    });
 });
