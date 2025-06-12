@@ -1,10 +1,14 @@
 import { PrismClient, PrismWinner } from "../src/index";
-import { expect, it, describe, vi } from 'vitest';
+import { expect, it, describe, vi, beforeEach } from 'vitest';
 import { setupTestEnv, PUBLISHER_ADDRESS, PUBLISHER_DOMAIN, USER_WALLET, CAMPAIGN_ID, MOCK_JWT_TOKEN } from './setupTestEnv';
 
 setupTestEnv();
 
 describe('PrismClient Retry and Timeout', () => {
+    beforeEach(() => {
+        // Reset auction state before each test
+        PrismClient.resetAuctionState(PUBLISHER_ADDRESS, PUBLISHER_DOMAIN);
+    });
     it('should retry failed requests with exponential backoff', async () => {
         const fetchSpy = vi.spyOn(global, 'fetch');
         fetchSpy.mockRejectedValueOnce(new Error('Network error'));

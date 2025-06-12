@@ -1,13 +1,33 @@
 {
   "name": "prism-sdk",
   "main": "dist/index.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.mjs",
+      "require": "./dist/react.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "react": [
+        "./dist/react.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist",
     "src"
   ],
-  "version": "1.2.0",
+  "version": "2.1.0",
   "description": "Typescript client for Prism protocol onchain advertising",
   "scripts": {
     "build": "tsup",
@@ -27,7 +47,11 @@
   "author": "Prism Protocol Team",
   "license": "MIT",
   "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.8",
     "@vitest/ui": "^3.2.3",
+    "happy-dom": "^18.0.1",
+    "jsdom": "^26.1.0",
     "tsup": "^8.3.6",
     "tsx": "^4.19.4",
     "typescript": "^5.7.2",
@@ -36,11 +60,13 @@
   "peerDependenciesMeta": {
     "typescript": {
       "optional": true
+    },
+    "react": {
+      "optional": true
     }
   },
-  "dependencies": {
-    "dotenv": "^16.4.7",
-    "ethers": "^6.13.4"
+  "peerDependencies": {
+    "react": ">=18"
   },
   "keywords": [
     "prism",

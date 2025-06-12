@@ -1,18 +1,23 @@
 import { PrismClient } from "../src/index";
-import { expect, it, describe, vi } from 'vitest';
+import { expect, it, describe, vi, beforeEach } from 'vitest';
 import { setupTestEnv, PUBLISHER_ADDRESS, PUBLISHER_DOMAIN, USER_WALLET, MOCK_JWT_TOKEN } from './setupTestEnv';
 
 setupTestEnv();
 
 describe('PrismClient init', () => {
+    beforeEach(() => {
+        // Reset auction state before each test
+        PrismClient.resetAuctionState(PUBLISHER_ADDRESS, PUBLISHER_DOMAIN);
+    });
     it('should trigger auto auction by default and call success callback', async () => {
         const onSuccess = vi.fn();
         const onError = vi.fn();
+        const getWalletAddress = () => USER_WALLET;
         const result = await PrismClient.init(
             PUBLISHER_ADDRESS,
             PUBLISHER_DOMAIN,
             {
-                connectedWallet: USER_WALLET,
+                getWalletAddress,
                 onSuccess,
                 onError
             }
