@@ -138,7 +138,6 @@ export class PrismClient {
             const auctionKey = `${publisherAddress}-${publisherDomain}-${walletAddress}`;
             this.completedAuctions.delete(auctionKey);
             this.pendingAuctions.delete(auctionKey);
-            console.log('PrismClient: Auction state reset for', auctionKey);
         } else {
             // Reset all auction states for this publisher+domain combination
             const keysToDelete = Array.from(this.completedAuctions).filter(key => 
@@ -150,7 +149,6 @@ export class PrismClient {
             
             keysToDelete.forEach(key => this.completedAuctions.delete(key));
             pendingKeysToDelete.forEach(key => this.pendingAuctions.delete(key));
-            console.log('PrismClient: Auction state reset for all wallet addresses');
         }
         
         // Reset the global requesting flag to allow new requests
@@ -177,13 +175,11 @@ export class PrismClient {
         
         // Check if auction already completed for this publisher+domain+wallet
         if (this.completedAuctions.has(auctionKey)) {
-            console.log('PrismClient: autoAuction already completed for this publisher+domain+wallet - blocking duplicate request');
             throw new Error('Auction already completed for this combination');
         }
 
         // Check if auction is currently pending for this publisher+domain+wallet  
         if (this.pendingAuctions.has(auctionKey)) {
-            console.log('PrismClient: autoAuction already in progress for this publisher+domain+wallet - blocking concurrent request');
             throw new Error('Auction already in progress for this combination');
         }
 
@@ -251,24 +247,20 @@ export class PrismClient {
         interval: number = this.DEFAULT_CONFIG.walletDetectionInterval
     ): Promise<string | undefined> {
         const startTime = Date.now();
-        console.log(`PrismClient: Starting wallet detection, timeout: ${timeout}ms`);
         
         while (Date.now() - startTime < timeout) {
             try {
                 const address = await getWalletAddress();
-                console.log(`PrismClient: Wallet check result:`, address);
                 if (address && address !== this.UNCONNECTED_WALLET_ADDRESS) {
-                    console.log(`PrismClient: Wallet found:`, address);
                     return address;
                 }
             } catch (error) {
-                console.log(`PrismClient: Wallet check error:`, error);
+                console.error(`PrismClient: Wallet check error:`, error);
             }
             
             await new Promise(resolve => setTimeout(resolve, interval));
         }
         
-        console.log(`PrismClient: Wallet detection timed out after ${timeout}ms`);
         return undefined;
     }
 
@@ -285,7 +277,6 @@ export class PrismClient {
         publisherDomain: string,
         options: PrismInitOptions = {}
     ): Promise<PrismWinner | null> {
-        console.log('PrismClient: init() called for', publisherAddress, publisherDomain);
         
         const { 
             autoTrigger = true, 
@@ -301,7 +292,6 @@ export class PrismClient {
         }
 
         if(this.isRequesting){
-            console.log("is requesting is true, blocking init call");
             return null;
         }
 
@@ -317,7 +307,7 @@ export class PrismClient {
                     walletToUse = await getWalletAddress();
                 } catch (error) {
                     // If initial wallet check fails, we'll try again in the polling loop
-                    console.log('PrismClient: Initial wallet check failed:', error);
+                    console.error('PrismClient: Initial wallet check failed:', error);
                     walletToUse = undefined;
                 }
                 
@@ -328,7 +318,6 @@ export class PrismClient {
                     
                     if (!detectionPromise) {
                         // Start new wallet detection
-                        console.log('PrismClient: Starting wallet detection...');
                         detectionPromise = this.waitForWallet(
                             getWalletAddress, 
                             walletDetectionTimeout, 
@@ -343,11 +332,9 @@ export class PrismClient {
                             this.activeWalletDetection.delete(detectionKey);
                         });
                     } else {
-                        console.log('PrismClient: Wallet detection already in progress, waiting for result...');
                     }
                     
                     walletToUse = await detectionPromise;
-                    console.log('PrismClient: Wallet detection result:', walletToUse || 'timeout');
                 }
             }
 
@@ -357,17 +344,14 @@ export class PrismClient {
             
             // Check if auction already completed for this publisher+domain+wallet
             if (this.completedAuctions.has(auctionKey)) {
-                console.log('PrismClient: Auction already completed for this publisher+domain+wallet - no action needed');
                 return null;
             }
 
             // Check if auction is currently pending for this publisher+domain+wallet
             if (this.pendingAuctions.has(auctionKey)) {
-                console.log('PrismClient: Auction already in progress for this publisher+domain+wallet - no action needed');
                 return null;
             }
 
-            console.log('PrismClient: Running auction for wallet:', finalWallet);
             
             // Run the auction
             const winner = await this.autoAuction(publisherAddress, publisherDomain, finalWallet, {
@@ -376,7 +360,6 @@ export class PrismClient {
                 onError: undefined
             });
             
-            console.log('PrismClient: Auction completed successfully');
             onSuccess?.(winner);
             this.isRequesting = false; // Reset flag after successful request
             return winner;
@@ -385,7 +368,6 @@ export class PrismClient {
             
             // If it's a "already completed" error from autoAuction, that's fine
             if (err.message.includes('already completed') || err.message.includes('already in progress')) {
-                console.log('PrismClient: Auction already handled for this wallet');
                 return null;
             }
 

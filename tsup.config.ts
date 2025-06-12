@@ -5,8 +5,9 @@ export default defineConfig({
   format: ["cjs", "esm"], // Build for commonJS and ESmodules
   dts: true, // Generate declaration file (.d.ts)
   splitting: false,
-  sourcemap: true,
+  sourcemap: false,
   clean: true,
+  minify: true, // Minify the output
   external: ["react"], // Treat all React-related modules as external
   esbuildOptions(options) {
     options.banner = {

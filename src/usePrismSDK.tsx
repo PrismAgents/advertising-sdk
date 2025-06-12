@@ -1,10 +1,5 @@
 import { useState, useCallback } from 'react';
 
-// Debug logging for React hooks
-if (typeof useState === 'undefined' || useState === null) {
-    console.error('usePrismSDK: useState is not available. This usually indicates a React version mismatch or bundling issue.');
-    console.log('React import check:', { useState, useCallback });
-}
 import { 
     PrismClient, 
     PrismWinner, 
@@ -55,7 +50,6 @@ export const usePrismSDK = ({ publisherAddress, publisherDomain }: UsePrismSDKCo
         options?: PrismInitOptions
     ): Promise<PrismWinner | null> => {
         if (isInitializing) {
-            console.log('usePrismSDK: init already in progress, skipping duplicate call');
             return null;
         }
 
