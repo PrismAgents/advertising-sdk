@@ -1,10 +1,15 @@
 import { PrismClient } from "../src/index";
-import { expect, it, describe, vi } from 'vitest';
+import { expect, it, describe, vi, beforeEach } from 'vitest';
 import { setupTestEnv, PUBLISHER_ADDRESS, PUBLISHER_DOMAIN, USER_WALLET, UNCONNECTED_WALLET, MOCK_JWT_TOKEN } from './setupTestEnv';
 
 setupTestEnv();
 
 describe('Wallet Detection', () => {
+    beforeEach(() => {
+        // Reset auction state before each test
+        PrismClient.resetAuctionState(PUBLISHER_ADDRESS, PUBLISHER_DOMAIN);
+    });
+
     it('should use getWalletAddress when wallet is immediately available', async () => {
         const getWalletAddress = vi.fn().mockReturnValue(USER_WALLET);
         const onSuccess = vi.fn();
@@ -115,21 +120,17 @@ describe('Wallet Detection', () => {
         expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
     });
 
-    it('should use connectedWallet parameter over getWalletAddress', async () => {
-        const getWalletAddress = vi.fn().mockReturnValue('0x9999999999999999999999999999999999999999');
+    it('should work without getWalletAddress and use unconnected state', async () => {
         const onSuccess = vi.fn();
 
         const result = await PrismClient.init(
             PUBLISHER_ADDRESS,
             PUBLISHER_DOMAIN,
             {
-                connectedWallet: USER_WALLET,
-                getWalletAddress,
                 onSuccess
             }
         );
 
-        expect(getWalletAddress).not.toHaveBeenCalled();
         expect(onSuccess).toHaveBeenCalledTimes(1);
         expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
     });

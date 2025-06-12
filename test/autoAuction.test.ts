@@ -1,10 +1,14 @@
 import { PrismClient, PrismWinner } from "../src/index";
-import { expect, it, describe, vi } from 'vitest';
+import { expect, it, describe, vi, beforeEach } from 'vitest';
 import { setupTestEnv, PUBLISHER_ADDRESS, PUBLISHER_DOMAIN, USER_WALLET, UNCONNECTED_WALLET, CAMPAIGN_ID, MOCK_JWT_TOKEN } from './setupTestEnv';
 
 setupTestEnv();
 
 describe('PrismClient autoAuction', () => {
+    beforeEach(() => {
+        // Reset auction state before each test
+        PrismClient.resetAuctionState(PUBLISHER_ADDRESS, PUBLISHER_DOMAIN);
+    });
     it('should use connected wallet when provided', async () => {
         const auctionResult: PrismWinner = await PrismClient.autoAuction(
             PUBLISHER_ADDRESS,

@@ -13,6 +13,84 @@ npm install prism-sdk
 yarn add prism-sdk
 ```
 
+## React Hook (Recommended)
+
+For React applications, use the `usePrismSDK` hook for simplified state management:
+
+```typescript
+import { useEffect } from 'react';
+import { usePrismSDK } from 'prism-sdk/react';
+
+function AdBanner({ publisherAddress, publisherDomain, userWallet }: {
+  publisherAddress: string;
+  publisherDomain: string;
+  userWallet?: string;
+}) {
+  const { isInitializing, winner, error, init, clicks, impressions } = usePrismSDK({
+    publisherAddress,
+    publisherDomain
+  });
+
+  useEffect(() => {
+    // The hook prevents duplicate initialization calls automatically
+    init({
+      getWalletAddress: async () => userWallet,
+      walletDetectionTimeout: 2000,
+      onSuccess: (winner) => {
+        console.log('Ad loaded:', winner.campaignName);
+      },
+      onError: (error) => {
+        console.error('Failed to load ad:', error.message);
+      }
+    });
+  }, [userWallet, init]);
+
+  const handleAdClick = async () => {
+    if (winner) {
+      try {
+        await clicks(winner.campaignId, winner.jwt_token);
+        window.open(winner.url, '_blank');
+      } catch (error) {
+        console.error('Click tracking failed:', error);
+        window.open(winner.url, '_blank');
+      }
+    }
+  };
+
+  const handleImageLoad = async () => {
+    if (winner) {
+      try {
+        await impressions(winner.campaignId, winner.jwt_token);
+        console.log('Impression tracked');
+      } catch (error) {
+        console.error('Impression tracking failed:', error);
+      }
+    }
+  };
+
+  if (isInitializing) return <div>Loading ad...</div>;
+  if (error) return <div>Failed to load ad: {error.message}</div>;
+  if (!winner) return <div>No ad available</div>;
+
+  return (
+    <div onClick={handleAdClick} style={{ cursor: 'pointer' }}>
+      <img
+        src={winner.bannerIpfsUri}
+        alt={winner.campaignName}
+        onLoad={handleImageLoad}
+        onError={() => console.error('Failed to load ad image')}
+      />
+    </div>
+  );
+}
+```
+
+**Key Benefits of the Hook:**
+- **Automatic State Management**: Tracks loading, success, and error states
+- **Duplicate Prevention**: `isInitializing` prevents multiple concurrent init calls
+- **Error Handling**: Centralized error state management
+- **TypeScript Support**: Full type safety and IntelliSense
+
 ## Auth
 - Address whitelisted: Please refer to the [Prism Protocol documentation](https://github.com/PrismAgents/documentation/wiki/TINT-Home) for more information on how to get whitelisted as publisher.
 
