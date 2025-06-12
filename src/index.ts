@@ -152,6 +152,9 @@ export class PrismClient {
             pendingKeysToDelete.forEach(key => this.pendingAuctions.delete(key));
             console.log('PrismClient: Auction state reset for all wallet addresses');
         }
+        
+        // Reset the global requesting flag to allow new requests
+        this.isRequesting = false;
     }
 
 
@@ -310,10 +313,16 @@ export class PrismClient {
         try {
             // Get current wallet address immediately if available
             if (getWalletAddress) {
-                walletToUse = await getWalletAddress();
+                try {
+                    walletToUse = await getWalletAddress();
+                } catch (error) {
+                    // If initial wallet check fails, we'll try again in the polling loop
+                    console.log('PrismClient: Initial wallet check failed:', error);
+                    walletToUse = undefined;
+                }
                 
-                // If no wallet found immediately, optionally wait for it
-                if (!walletToUse && walletDetectionTimeout > 0) {
+                // If no wallet found immediately or zero address returned, optionally wait for it
+                if ((!walletToUse || walletToUse === this.UNCONNECTED_WALLET_ADDRESS) && walletDetectionTimeout > 0) {
                     // Check if wallet detection is already active for this publisher+domain
                     let detectionPromise = this.activeWalletDetection.get(detectionKey);
                     

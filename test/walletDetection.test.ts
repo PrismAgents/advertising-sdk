@@ -64,7 +64,7 @@ describe('Wallet Detection', () => {
             }
         );
 
-        expect(getWalletAddress).toHaveBeenCalledTimes(4);
+        expect(getWalletAddress).toHaveBeenCalledTimes(5);
         expect(onSuccess).toHaveBeenCalledTimes(1);
         expect(result?.jwt_token).toBe(MOCK_JWT_TOKEN);
     });
