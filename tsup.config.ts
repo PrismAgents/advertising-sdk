@@ -14,4 +14,4 @@ export default defineConfig({
       js: '"use client";', // Add use client directive for Next.js compatibility
     };
   }
-});
+}); 
